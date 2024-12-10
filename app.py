@@ -1,0 +1,431 @@
+import streamlit as st
+import pandas as pd
+import asyncpraw
+import nest_asyncio
+import asyncio
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+from datetime import datetime
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import plotly.express as px
+import seaborn as sns
+import nltk
+nltk.download('wordnet')
+from transformers import pipeline  # For text summarization
+
+# Enable nested event loop for Streamlit
+nest_asyncio.apply()
+
+# Initialize Sentiment Analyzer
+sentiment_analyzer = SentimentIntensityAnalyzer()
+
+# Initialize Summarization Pipeline
+summarizer = pipeline("summarization")
+
+# PRAW API credentials
+REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
+REDDIT_CLIENT_SECRET = "I230bFaJWJHy58dnb3nBDvmiWdsDIg"
+REDDIT_USER_AGENT = "windows:SiblingsDataApp:v1.0 (by /u/Proper-Leading-4091)"
+
+# Define disability and sibling terms
+disability_terms = [
+    "22q11.2 Deletion Syndrome", "ADHD", "Angelman Syndrome", "Autism", "Asperger",
+    "CDKL5 Deficiency Disorder", "Cerebral Palsy", "Cornelia de Lange Syndrome",
+    "Developmental Delay", "Developmental Disability", "Down Syndrome", "Epilepsy",
+    "Fetal Alcohol Syndrome", "Foetal Alcohol Syndrome", "Fragile X Syndrome", "Genetic condition",
+    "Global Developmental Delay", "Intellectual Disability", "MECP2 Duplication Disorder",
+    "Neurodivergent", "Neurodevelopmental Condition", "Prader-Willi Syndrome", "Rett Syndrome",
+    "Tourette’s Syndrome", "Tic Disorder", "Williams Syndrome", "NDIS", "Hereditary",
+    "ADD", "Aspergers", "Asperger's", "Aspie", "ASD", "Down's Syndrome", "Epileptic",
+    "Foetal Alcohol Spectrum Disorder", "FAS", "FASD", "NDC", "Intellectual impairment",
+    "Rett's Syndrome", "Tics", "William Syndrome", "Tourette Syndrome"
+]
+
+sibling_terms = [
+    "Brother", "Sister", "Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs"
+]
+
+# Additional keywords for struggles
+struggle_keywords = ["struggle", "challenge", "overlooked", "burden", "support", "difficulty"]
+
+# Function for sentiment and emotion analysis
+def analyze_sentiment_and_emotion(text):
+    if pd.isna(text) or not text.strip():
+        return "Neutral", "Neutral"
+    sentiment_scores = sentiment_analyzer.polarity_scores(text)
+    compound = sentiment_scores["compound"]
+    if compound >= 0.05:
+        sentiment = "Positive"
+    elif compound <= -0.05:
+        sentiment = "Negative"
+    else:
+        sentiment = "Neutral"
+    # Simple emotion logic
+    emotion = (
+        "Happy" if "happy" in text.lower() else
+        "Angry" if "angry" in text.lower() else
+        "Sad" if "sad" in text.lower() else
+        "Fearful" if "fear" in text.lower() else
+        "Neutral"
+    )
+    return sentiment, emotion
+
+# Async function to fetch posts using PRAW
+async def fetch_praw_data(query, limit=50):
+    reddit = asyncpraw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT,
+    )
+    data = []
+    subreddit = await reddit.subreddit("all")
+    async for submission in subreddit.search(query, limit=limit):
+        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+        data.append({
+            "Post ID": submission.id,
+            "Title": submission.title,
+            "Body": submission.selftext,
+            "Upvotes": submission.score,
+            "Subreddit": submission.subreddit.display_name,
+            "Author": str(submission.author),
+            "Created_UTC": datetime.utcfromtimestamp(submission.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "Sentiment": sentiment,
+            "Emotion": emotion
+        })
+    return pd.DataFrame(data)
+
+# Async function to fetch comments for a specific post
+async def fetch_comments(post_id, limit=100):
+    reddit = asyncpraw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT,
+    )
+    try:
+        post = await reddit.submission(id=post_id)
+        post.comment_sort = "top"
+        comments = []
+        for comment in post.comments:
+            if hasattr(comment, "body"):
+                sentiment, emotion = analyze_sentiment_and_emotion(comment.body)
+                comments.append({
+                    "Comment ID": comment.id,
+                    "Body": comment.body,
+                    "Score": comment.score,
+                    "Author": str(comment.author),
+                    "Created_UTC": datetime.utcfromtimestamp(comment.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
+                    "Sentiment": sentiment,
+                    "Emotion": emotion
+                })
+        return pd.DataFrame(comments)
+    except Exception as e:
+        st.error(f"Error fetching comments: {str(e)}")
+        return pd.DataFrame()
+
+# Generate heatmap
+def generate_heatmap(df):
+    if "Sentiment" in df.columns and "Emotion" in df.columns:
+        heatmap_data = df.pivot_table(index="Sentiment", columns="Emotion", aggfunc="size", fill_value=0)
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(heatmap_data, annot=True, fmt="d", cmap="coolwarm")
+        plt.title("Heatmap of Sentiment vs Emotion")
+        st.pyplot(plt)
+
+# Generate word cloud
+def create_wordcloud(text, title):
+    if not text.strip():
+        st.warning("No text data available for Word Cloud!")
+        return
+    wordcloud = WordCloud(background_color="white").generate(text)
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis("off")
+    plt.title(title)
+    st.pyplot(plt)
+
+# Function to summarize text
+def summarize_text(text, max_length=100):
+    if not text or len(text.split()) < 20:  # Skip summarization for short or empty text
+        return "Summary not available: The text is too short for summarization."
+    try:
+        summary = summarizer(text, max_length=max_length, min_length=30, do_sample=False)
+        return summary[0]['summary_text']
+    except Exception as e:
+        st.warning(f"Summarization failed: {str(e)}")
+        return "Summarization not available."
+	
+    
+from nltk.corpus import wordnet
+
+def get_synonyms(word):
+    synonyms = set()
+    for syn in wordnet.synsets(word):
+        for lemma in syn.lemmas():
+            synonyms.add(lemma.name().replace("_", " ").lower())
+    return list(synonyms)
+
+# Extend struggle_keywords with synonyms
+def expand_struggle_keywords(keywords):
+    expanded_keywords = set(keywords)
+    for word in keywords:
+        expanded_keywords.update(get_synonyms(word))
+    return list(expanded_keywords)
+    
+    
+
+# Initial struggle keywords
+struggle_keywords = [
+    "struggle", "challenge", "hardship", "difficulty", "burden", "overlooked"
+]
+
+# Dynamically expand struggle_keywords
+struggle_keywords = expand_struggle_keywords(struggle_keywords)
+print(f"Expanded struggle keywords: {struggle_keywords}")
+
+
+def filter_relevant_posts(df):
+    filtered_df = df[
+        (df["Sentiment"].isin(["Negative", "Neutral"])) & 
+        (df["Emotion"].isin(["Sad", "Angry", "Fearful"])) &
+        (df["Body"].str.contains("|".join(struggle_keywords), case=False, na=False))
+    ]
+    return filtered_df
+    
+def plot_emotion_radar(df):
+    if df.empty:
+        st.warning("No data available for emotion radar chart.")
+        return
+
+    emotion_counts = df['Emotion'].value_counts(normalize=True)
+    categories = ['Happy', 'Sad', 'Angry', 'Fearful', 'Neutral']
+    values = [emotion_counts.get(cat, 0) for cat in categories]
+
+    fig = px.line_polar(data_frame=df, theta=categories, r=values, title="Emotion Radar Chart", line_close=True)
+    st.plotly_chart(fig)
+
+
+def plot_sentiment_by_subreddit(df):
+    if df.empty:
+        st.warning("No data available for sentiment analysis by subreddit.")
+        return
+
+    sentiment_subreddit = df.groupby(['Subreddit', 'Sentiment']).size().reset_index(name='Count')
+    fig = px.bar(sentiment_subreddit, x='Subreddit', y='Count', color='Sentiment',
+                 title="Sentiment Distribution by Subreddit", barmode='group')
+    st.plotly_chart(fig)
+    
+    
+   
+
+# Main Streamlit app
+def main():
+    st.title("Sibling Project: Reddit Data Analysis Dashboard")
+
+    # Sidebar filter inputs
+    st.sidebar.header("Filters and Configuration")
+    selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
+    selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
+    start_date = st.sidebar.date_input("Start Date")
+    end_date = st.sidebar.date_input("End Date")
+
+    if start_date > end_date:
+        st.error("Start Date must be before End Date!")
+
+    # Initialize session states
+    if "post_data" not in st.session_state:
+        st.session_state.post_data = pd.DataFrame()
+    if "all_posts" not in st.session_state:
+        st.session_state.all_posts = pd.DataFrame()
+    if "comments_data" not in st.session_state:
+        st.session_state.comments_data = pd.DataFrame()
+    all_posts_df = pd.DataFrame()
+    # Fetch Data
+    if st.sidebar.button("Fetch Data"):
+        with st.spinner("Fetching data... Please wait."):
+            all_posts_df = pd.DataFrame()
+            for disability in selected_disabilities:
+                for sibling in selected_siblings:
+                    query = f"({disability}) AND ({sibling})"
+                    praw_df = asyncio.run(fetch_praw_data(query, limit=50))
+                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+            
+            if all_posts_df.empty:
+                st.warning("No posts found for the selected filters.")
+            else:
+                # Save and display all posts
+                st.session_state.all_posts = all_posts_df
+                st.write(f"Total fetched records: {len(all_posts_df)}")
+                st.subheader("All Posts")
+                st.dataframe(all_posts_df)
+
+                # Filter and display relevant posts
+                relevant_posts = filter_relevant_posts(all_posts_df)
+                st.session_state.post_data = relevant_posts
+                st.write(f"Total relevant records: {len(relevant_posts)}")
+                st.subheader("Relevant Posts")
+                st.dataframe(relevant_posts)
+                        
+                    
+		
+                # Top 5 Subreddits
+                st.subheader("Top 5 Popular Subreddits")
+                top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
+                st.bar_chart(top_subreddits)
+
+                # Word Cloud
+                st.subheader("Word Cloud of Post Titles")
+                create_wordcloud(" ".join(all_posts_df["Title"].dropna()), "Post Titles Word Cloud")
+
+                # Post Highlights
+                st.subheader("Post Highlights")
+                st.write("**Most Upvoted Post:**", all_posts_df.loc[all_posts_df["Upvotes"].idxmax()])
+                st.write("**Latest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmax()])
+                st.write("**Oldest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmin()])
+
+                # Heatmap of Sentiment vs Emotion
+                st.subheader("Heatmap of Sentiment vs Emotion")
+                generate_heatmap(st.session_state.post_data)
+
+                # 1. Sentiment and Emotion Distribution by Topic
+                st.subheader("Sentiment and Emotion Distribution by Topic")
+                if not all_posts_df.empty:
+                    sentiment_emotion_dist = all_posts_df.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
+                    fig = px.bar(sentiment_emotion_dist, x="Sentiment", y="Count", color="Emotion", title="Sentiment and Emotion Distribution by Topic")
+                    st.plotly_chart(fig, use_container_width=True)
+
+                # 2. Struggles Word Cloud for Siblings
+                if not st.session_state.post_data.empty:
+                    st.subheader("Struggles Word Cloud")
+                    relevant_text = " ".join(
+                        st.session_state.post_data["Body"].dropna().tolist()
+                    )
+                    struggle_words_only = " ".join([word for word in relevant_text.split() if word.lower() in struggle_keywords])
+                    create_wordcloud(struggle_words_only, "Struggles Word Cloud")
+
+
+            #   # 3. Temporal Analysis of Struggles
+            #    st.subheader("Temporal Analysis of Struggles")
+            #    if not relevant_posts.empty:
+            #        relevant_posts["Created_Date"] = pd.to_datetime(relevant_posts["Created_UTC"]).dt.date
+            #        temporal_data = relevant_posts.groupby("Created_Date").size().reset_index(name="Count")
+            #        fig = px.line(temporal_data, x="Created_Date", y="Count", title="Temporal Analysis of Struggles")
+            #        st.plotly_chart(fig, use_container_width=True)
+            
+            
+            
+
+                # 4. Most Discussed Subreddits
+                st.subheader("Most Discussed Subreddits")
+                if not all_posts_df.empty:
+                    subreddit_count = all_posts_df["Subreddit"].value_counts().head(10).reset_index()
+                    subreddit_count.columns = ["Subreddit", "Count"]
+                    fig = px.bar(subreddit_count, x="Subreddit", y="Count", title="Most Discussed Subreddits")
+                    st.plotly_chart(fig, use_container_width=True)
+           
+           
+                st.subheader("Sentiment Distribution by Subreddit")       
+                if not st.session_state.all_posts.empty:
+                    plot_sentiment_by_subreddit(st.session_state.all_posts)
+                   
+                st.subheader("Emotion Radar Chart")               
+                if not st.session_state.all_posts.empty:
+                    plot_emotion_radar(st.session_state.all_posts)
+
+
+
+
+                
+
+    # Download buttons
+    # Download Relevant Posts
+    if not st.session_state.post_data.empty:
+        st.sidebar.download_button(
+            "Download Relevant Posts",
+            st.session_state.post_data.to_csv(index=False),
+            file_name="relevant_posts.csv",
+            key="download_relevant_posts"  # Unique key for relevant posts
+        )
+    # Download All Posts
+    if not st.session_state.all_posts.empty:
+        st.sidebar.download_button(
+            "Download All Posts",
+            st.session_state.all_posts.to_csv(index=False),
+            file_name="all_posts.csv",
+            key="download_all_posts"  # Unique key for all posts
+        )
+
+
+    # Fetch comments and summaries
+    st.subheader("Enter Post ID for Comments and Summarization Analysis")
+    post_id = st.text_input("Post ID")
+    if st.button("Fetch Comments and Summarize"):
+
+        with st.spinner("Fetching comments... Please wait."):
+            comments_data = asyncio.run(fetch_comments(post_id))
+
+        if not comments_data.empty:
+            st.success(f"Fetched {len(comments_data)} comments for Post ID: {post_id}")
+            st.session_state.comments_data = comments_data  # Persist comments data
+            st.dataframe(st.session_state.comments_data)
+
+            # Summarize post
+            if not st.session_state.all_posts.empty and post_id in st.session_state.all_posts["Post ID"].values:
+                selected_post = st.session_state.all_posts.loc[st.session_state.all_posts["Post ID"] == post_id]
+                combined_text = selected_post.iloc[0]["Title"] + " " + selected_post.iloc[0]["Body"]
+                post_summary = summarize_text(combined_text)
+                st.subheader("Post Summary")
+                st.write(post_summary)
+            else:
+                st.warning("Post not found in the fetched data. Skipping post summarization.")  
+
+            # Summarize comments
+            all_comments_text = " ".join(st.session_state.comments_data["Body"].dropna())
+            comments_summary = summarize_text(all_comments_text)
+            st.subheader("Comments Summary")
+            st.write(comments_summary)
+
+            # Visualizations for Comments
+            st.subheader("Visualizations for Comments")
+            st.bar_chart(st.session_state.comments_data["Score"].value_counts().head(10), use_container_width=True)
+
+            st.subheader("Word Cloud for Comments")
+            create_wordcloud(" ".join(st.session_state.comments_data["Body"].dropna()), "Comments Word Cloud")
+
+            # Overall Sentiment and Emotion
+            overall_sentiment = st.session_state.comments_data["Sentiment"].value_counts()
+            overall_emotion = st.session_state.comments_data["Emotion"].value_counts()
+            st.write("**Overall Sentiment in Comments:**", overall_sentiment)
+            st.write("**Overall Emotion in Comments:**", overall_emotion)
+
+            # Heatmap for Comments
+            st.subheader("Heatmap of Sentiments and Emotions in Comments")
+            generate_heatmap(st.session_state.comments_data)
+            
+            
+            # 5. Sentiment Comparison Between Posts and Comments
+            st.subheader("Sentiment Comparison Between Posts and Comments")
+            if not st.session_state.comments_data.empty and not all_posts_df.empty:
+                post_sentiments = all_posts_df["Sentiment"].value_counts(normalize=True).reset_index()
+                post_sentiments.columns = ["Sentiment", "Percentage"]
+                post_sentiments["Source"] = "Posts"
+
+                comment_sentiments = st.session_state.comments_data["Sentiment"].value_counts(normalize=True).reset_index()
+                comment_sentiments.columns = ["Sentiment", "Percentage"]
+                comment_sentiments["Source"] = "Comments"
+
+                combined_sentiments = pd.concat([post_sentiments, comment_sentiments])
+                fig = px.bar(combined_sentiments, x="Sentiment", y="Percentage", color="Source", barmode="group",
+                             title="Sentiment Comparison Between Posts and Comments")
+                st.plotly_chart(fig, use_container_width=True)
+    
+    # Download Comments
+    if not st.session_state.comments_data.empty:
+        st.sidebar.download_button(
+            "Download Comments Data",
+            st.session_state.comments_data.to_csv(index=False),
+            file_name="comments_data.csv",
+            key="download_comments"  # Unique key for comments
+        )
+
+
+if __name__ == "__main__":
+    main()
