@@ -9,7 +9,7 @@ dependencies:
   - matplotlib              # For plotting
   - asyncpraw
   - nest_asyncio
-  - torch==2.5.1+cpu --index-url https://download.pytorch.org/whl/cpu
+  - torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
   - torchvision==0.17.2     # Compatible torchvision release
   - torchaudio==2.2.2       # Compatible torchaudio release
   - cpuonly
