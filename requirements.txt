@@ -7,6 +7,7 @@ nest-asyncio
 plotly
 seaborn
 transformers
+wordcloud
 tqdm
 nltk
 scikit-learn
