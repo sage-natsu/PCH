@@ -14,4 +14,4 @@ scikit-learn
 fpdf
 torch==2.2.1
 torchvision==0.17.2
-torchaudio==2.0.1
+torchaudio==2.2.1
