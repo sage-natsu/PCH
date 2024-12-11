@@ -7,6 +7,12 @@ dependencies:
   - pandas                  # Data manipulation
   - matplotlib              # For plotting
   - asyncpraw
+  - nest_asyncio
+  - asyncio
+  - matplotlib
+  - plotly
+  - spacy
+  - seaborn
   - streamlit               # Streamlit library
   - transformers            # NLP models
   - tqdm                    # Progress bars
