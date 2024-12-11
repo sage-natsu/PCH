@@ -29,3 +29,4 @@ dependencies:
   - pip:                    # Additional pip-only dependencies
       - fpdf                # PDF generation
       - asyncpraw           # Reddit API
+      - onnxscript
