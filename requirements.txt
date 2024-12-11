@@ -60,4 +60,4 @@ torch==2.5.1
 tqdm==4.67.1
 transformers==4.47.0
 wordcloud==1.9.4
-scipy==1.9.3
+scipy==1.10.1
