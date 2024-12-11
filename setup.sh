@@ -8,5 +8,9 @@ conda env create -f conda.yml
 # Activate the environment
 source activate reddit_dashboard_env
 
+# Ensure correct Python version and dependencies
+pip install -r requirements.txt
+
+
 # Run Streamlit
 streamlit run app.py
