@@ -12,6 +12,6 @@ tqdm
 nltk
 scikit-learn
 fpdf
-torch==2.0.1
+torch==2.2.1
 torchvision==0.15.2
 torchaudio==2.0.1
