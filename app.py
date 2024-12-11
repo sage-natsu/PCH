@@ -1,3 +1,17 @@
+import subprocess
+import sys
+
+# Check installed packages
+installed_packages = subprocess.check_output([sys.executable, "-m", "pip", "freeze"]).decode("utf-8")
+print(installed_packages)
+
+# Then try to import asyncpraw
+try:
+    import asyncpraw
+    print("asyncpraw imported successfully!")
+except ModuleNotFoundError as e:
+    print(f"Error importing asyncpraw: {e}")
+
 import streamlit as st
 import pandas as pd
 import asyncpraw
