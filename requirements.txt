@@ -12,3 +12,5 @@ tqdm
 nltk
 scikit-learn
 fpdf
+pytorch
+torchvision
