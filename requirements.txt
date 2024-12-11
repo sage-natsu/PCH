@@ -1,0 +1,13 @@
+streamlit
+asyncpraw
+numpy
+pandas
+matplotlib
+nest-asyncio
+plotly
+seaborn
+transformers
+tqdm
+nltk
+scikit-learn
+fpdf
