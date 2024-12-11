@@ -6,6 +6,7 @@ dependencies:
   - numpy                   # Core numerical library
   - pandas                  # Data manipulation
   - matplotlib              # For plotting
+  - asyncpraw
   - streamlit               # Streamlit library
   - transformers            # NLP models
   - tqdm                    # Progress bars
