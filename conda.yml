@@ -3,14 +3,14 @@ channels:
   - conda-forge             # Preferred channel for most packages
   - defaults                # Default channel
 dependencies:
-  - python=3.9.21              # Compatible Python version
+  - python=3.9              # Compatible Python version
   - numpy                   # Core numerical library
   - pandas                  # Data manipulation
   - matplotlib              # For plotting
   - asyncpraw
   - nest_asyncio
   - torch
-  - pytorch==2.0.1          # Stable PyTorch release
+  - pytorch==2.2.1          # Stable PyTorch release
   - torchvision==0.15.2     # Compatible torchvision release
   - torchaudio==2.0.1       # Compatible torchaudio release
   - cpuonly
