@@ -1,6 +1,7 @@
 name: reddit_dashboard_env  # Name of your environment
 channels:
   - conda-forge             # Preferred channel for most packages
+  - defaults                # Default channel
 dependencies:
   - python=3.9.21              # Compatible Python version
   - numpy                   # Core numerical library
@@ -9,9 +10,9 @@ dependencies:
   - asyncpraw
   - nest_asyncio
   - torch
-  - pytorch
-  - torchvision
-  - torchaudio
+  - pytorch==2.0.1          # Stable PyTorch release
+  - torchvision==0.15.2     # Compatible torchvision release
+  - torchaudio==2.0.1       # Compatible torchaudio release
   - cpuonly
   - sentencepiece
   - asyncio
@@ -20,7 +21,7 @@ dependencies:
   - spacy
   - seaborn
   - streamlit               # Streamlit library
-  - transformers==4.47.0    # NLP models
+  - transformers             # NLP models
   - tqdm                    # Progress bars
   - wordcloud=1.9.2         # Specific WordCloud version
   - nltk                    # Natural Language Toolkit
