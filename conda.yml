@@ -8,6 +8,8 @@ dependencies:
   - matplotlib              # For plotting
   - asyncpraw
   - nest_asyncio
+  - torch
+  - sentencepiece
   - asyncio
   - matplotlib
   - plotly
