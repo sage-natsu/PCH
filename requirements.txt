@@ -7,7 +7,7 @@ nest-asyncio
 plotly
 seaborn
 transformers==4.47.0
-wordcloud
+wordcloud==1.9.4
 tqdm
 nltk
 scikit-learn
