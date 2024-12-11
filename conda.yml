@@ -12,7 +12,7 @@ dependencies:
   - torch
   - pytorch==2.2.1          # Stable PyTorch release
   - torchvision==0.17.2     # Compatible torchvision release
-  - torchaudio==2.0.1       # Compatible torchaudio release
+  - torchaudio==2.2.1       # Compatible torchaudio release
   - cpuonly
   - sentencepiece
   - asyncio
