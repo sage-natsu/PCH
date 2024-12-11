@@ -2,7 +2,7 @@ name: reddit_dashboard_env  # Name of your environment
 channels:
   - conda-forge             # Preferred channel for most packages
 dependencies:
-  - python=3.9              # Compatible Python version
+  - python=3.9.21              # Compatible Python version
   - numpy                   # Core numerical library
   - pandas                  # Data manipulation
   - matplotlib              # For plotting
