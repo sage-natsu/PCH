@@ -58,5 +58,5 @@ textblob==0.18.0
 torch==2.5.1
 tqdm==4.67.1
 transformers==4.47.0
-wordcloud==1.8.2.2
+wordcloud==1.9.1
 scipy==1.9.3
