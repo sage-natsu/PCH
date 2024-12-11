@@ -39,8 +39,8 @@ nest_asyncio.apply()
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
-# Initialize Summarization Pipeline
-summarizer = pipeline("summarization")
+# Specifing a lightweight model explicitly
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
