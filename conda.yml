@@ -4,7 +4,7 @@ channels:
   - defaults                # Default channel
 dependencies:
   - python=3.9              # Compatible Python version
-  - numpy                   # Core numerical library
+  - numpy<2.0                   # Core numerical library
   - pandas                  # Data manipulation
   - matplotlib              # For plotting
   - asyncpraw
