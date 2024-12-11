@@ -9,6 +9,8 @@ dependencies:
   - asyncpraw
   - nest_asyncio
   - torch
+  - pytorch
+  - torchvision
   - sentencepiece
   - asyncio
   - matplotlib
