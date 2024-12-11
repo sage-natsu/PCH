@@ -27,6 +27,12 @@ import nltk
 nltk.download('wordnet')
 from transformers import pipeline  # For text summarization
 
+# Download VADER lexicon
+nltk.download('vader_lexicon')
+
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+
 # Enable nested event loop for Streamlit
 nest_asyncio.apply()
 
