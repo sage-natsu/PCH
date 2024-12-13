@@ -112,6 +112,11 @@ async def fetch_praw_data(query, limit=50):
             "Emotion": emotion
         })
     return pd.DataFrame(data)
+    
+def group_terms(terms, group_size=5):
+   
+    return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
+        
 
 # Async function to fetch comments for a specific post
 async def fetch_comments(post_id, limit=100):
