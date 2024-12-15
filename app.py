@@ -1,9 +1,8 @@
+from datetime import datetime, timezone
 import subprocess
 import sys
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-
 
 try:
     import asyncpraw
@@ -86,7 +85,7 @@ def analyze_sentiment_and_emotion(text):
     return sentiment, emotion
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query, limit=50):
+async def fetch_praw_data(query,start_date,end_date. limit=50):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
@@ -103,7 +102,7 @@ async def fetch_praw_data(query, limit=50):
             "Upvotes": submission.score,
             "Subreddit": submission.subreddit.display_name,
             "Author": str(submission.author),
-            "Created_UTC": datetime.utcfromtimestamp(submission.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
             "Sentiment": sentiment,
             "Emotion": emotion
         })
@@ -231,8 +230,8 @@ def main():
     st.sidebar.header("Filters and Configuration")
     selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
     selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
-    start_date = st.sidebar.date_input("Start Date")
-    end_date = st.sidebar.date_input("End Date")
+    start_date_utc  =  datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
     if start_date > end_date:
         st.error("Start Date must be before End Date!")
