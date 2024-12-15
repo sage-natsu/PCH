@@ -3,6 +3,8 @@ import sys
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+
+
 try:
     import asyncpraw
     print("asyncpraw imported successfully!")
@@ -21,7 +23,8 @@ import plotly.express as px
 import seaborn as sns
 import nltk
 nltk.download('wordnet')
- 
+from transformers import pipeline  # For text summarization
+
 # Download VADER lexicon
 nltk.download('vader_lexicon')
 
@@ -33,6 +36,9 @@ nest_asyncio.apply()
 
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
+
+# Specifing a lightweight model explicitly
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6",device=-1)
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
@@ -159,6 +165,19 @@ def create_wordcloud(text, title):
     plt.title(title)
     st.pyplot(plt)
 
+# Function to summarize text
+def summarize_text(text, max_length=100):
+    if not text or len(text.split()) < 20:  # Skip summarization for short or empty text
+        return "Summary not available: The text is too short for summarization."
+    try:
+        summary = summarizer(text, max_length=max_length, min_length=30, do_sample=False)
+        return summary[0]['summary_text']
+    except Exception as e:
+        st.warning(f"Summarization failed: {str(e)}")
+        return "Summarization not available."
+	
+    
+
 def get_synonyms(word):
     synonyms = set()
     for syn in wordnet.synsets(word):
@@ -206,7 +225,15 @@ def plot_emotion_radar(df):
     st.plotly_chart(fig)
 
 
+def plot_sentiment_by_subreddit(df):
+    if df.empty:
+        st.warning("No data available for sentiment analysis by subreddit.")
+        return
 
+    sentiment_subreddit = df.groupby(['Subreddit', 'Sentiment']).size().reset_index(name='Count')
+    fig = px.bar(sentiment_subreddit, x='Subreddit', y='Count', color='Sentiment',
+                 title="Sentiment Distribution by Subreddit", barmode='group')
+    st.plotly_chart(fig)
     
    
 
