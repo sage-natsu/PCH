@@ -232,15 +232,16 @@ def main():
     selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
     selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
 
-    # Convert user-selected dates to UTC datetime objects
-    try:
-        start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-        end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
-    except AttributeError as e:
-        st.error(f"Invalid date selection: {e}")
+     # Inside the main function
+     if start_date > end_date:
+	st.error("Start Date must be before End Date!")
+     return
+	
+      # Convert selected dates to UTC
+      start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)   end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
-    if start_date_utc > end_date_utc:
-        st.error("Start Date must be before End Date!")
+st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
+
 
     # Initialize session states
     if "post_data" not in st.session_state:
