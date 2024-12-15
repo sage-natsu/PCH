@@ -245,7 +245,7 @@ def main():
      start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)   
      end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
-    st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
+     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
 
 
     # Initialize session states
