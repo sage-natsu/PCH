@@ -94,6 +94,7 @@ async def fetch_praw_data(query,start_date,end_date,limit=50):
     data = []
     subreddit = await reddit.subreddit("all")
     async for submission in subreddit.search(query, limit=limit):
+	created_date = datetime.utcfromtimestamp(submission.created_utc)    
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
         data.append({
             "Post ID": submission.id,
