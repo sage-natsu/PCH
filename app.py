@@ -233,16 +233,20 @@ def main():
     st.sidebar.header("Filters and Configuration")
     selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
     selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
+    start_date = st.sidebar.date_input("Start Date")
+    end_date = st.sidebar.date_input("End Date")
+	
 
      # Inside the main function
      if start_date > end_date:
 	st.error("Start Date must be before End Date!")
-     return
+        return
 	
-      # Convert selected dates to UTC
-      start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)   end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+     # Convert selected dates to UTC
+     start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)   
+     end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
-st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
+    st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
 
 
     # Initialize session states
