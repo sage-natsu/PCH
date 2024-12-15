@@ -96,7 +96,7 @@ async def fetch_praw_data(query,start_date,end_date,limit=50):
     async for submission in subreddit.search(query, limit=limit):
 	created_date = datetime.utcfromtimestamp(submission.created_utc)
         if not (start_date_utc <= created_date <= end_date_utc):
-           continue
+            continue
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
         data.append({
             "Post ID": submission.id,
