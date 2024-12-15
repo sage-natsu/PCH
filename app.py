@@ -362,19 +362,10 @@ def main():
             st.session_state.comments_data = comments_data  # Persist comments data
             st.dataframe(st.session_state.comments_data)
 
-            # Summarize post
-            if not st.session_state.all_posts.empty and post_id in st.session_state.all_posts["Post ID"].values:
-                selected_post = st.session_state.all_posts.loc[st.session_state.all_posts["Post ID"] == post_id]
-                combined_text = selected_post.iloc[0]["Title"] + " " + selected_post.iloc[0]["Body"]
-                post_summary = summarize_text(combined_text)
-                st.subheader("Post Summary")
-                st.write(post_summary)
-            else:
-                st.warning("Post not found in the fetched data. Skipping post summarization.")  
 
        
 
-            # Visualizations for Comments
+             # Visualizations for Comments
             st.subheader("Visualizations for Comments")
             st.bar_chart(st.session_state.comments_data["Score"].value_counts().head(10), use_container_width=True)
 
