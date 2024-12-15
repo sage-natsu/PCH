@@ -26,7 +26,7 @@ nltk.download('wordnet')
 nltk.download('vader_lexicon')
 
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-
+from nltk.corpus import wordnet
 
 # Enable nested event loop for Streamlit
 nest_asyncio.apply()
