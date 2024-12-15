@@ -85,7 +85,7 @@ def analyze_sentiment_and_emotion(text):
     return sentiment, emotion
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query,start_date,end_date. limit=50):
+async def fetch_praw_data(query,start_date,end_date,limit=50):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
