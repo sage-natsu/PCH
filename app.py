@@ -235,9 +235,8 @@ def main():
     start_date = st.sidebar.date_input("Start Date")
     end_date = st.sidebar.date_input("End Date")
 	
-    # Inside the main function
     if start_date > end_date:
-	st.error("Start Date must be before End Date!")
+        st.error("Start Date must be before End Date!")
         
      
 	
