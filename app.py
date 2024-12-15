@@ -1,4 +1,4 @@
-from datetime import datetime, date, timezone
+from datetime import datetime, timezone
 import subprocess
 import sys
 import os
@@ -16,7 +16,6 @@ import nest_asyncio
 import asyncio
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
-from datetime import datetime
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.express as px
 import seaborn as sns
@@ -85,7 +84,7 @@ def analyze_sentiment_and_emotion(text):
     return sentiment, emotion
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query,start_date,end_date,limit=50):
+async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
@@ -94,7 +93,7 @@ async def fetch_praw_data(query,start_date,end_date,limit=50):
     data = []
     subreddit = await reddit.subreddit("all")
     async for submission in subreddit.search(query, limit=limit):
-	created_date = datetime.utcfromtimestamp(submission.created_utc)
+        created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
