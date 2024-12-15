@@ -1,5 +1,13 @@
+aiofiles
+aiohappyeyeballs
+aiohttp
+aiosignal
+altair
 streamlit
 asyncpraw
+attrs
+blinker
+click
 numpy<2.0
 pandas
 matplotlib
