@@ -20,8 +20,8 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.express as px
 import seaborn as sns
 import nltk
-from nltk.corpus import wordnet
-
+nltk.download('wordnet')
+ 
 # Download VADER lexicon
 nltk.download('vader_lexicon')
 
