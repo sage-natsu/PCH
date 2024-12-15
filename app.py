@@ -234,11 +234,11 @@ def main():
     # Convert user-selected dates to UTC datetime objects
     try:
         start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-    end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
-except AttributeError as e:
-    st.error(f"Invalid date selection: {e}")
+        end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+    except AttributeError as e:
+        st.error(f"Invalid date selection: {e}")
 
-    if start_date > end_date:
+    if start_date_utc > end_date_utc:
         st.error("Start Date must be before End Date!")
 
     # Initialize session states
@@ -256,7 +256,7 @@ except AttributeError as e:
             for disability in selected_disabilities:
                 for sibling in selected_siblings:
                     query = f"({disability}) AND ({sibling})"
-                    praw_df = asyncio.run(fetch_praw_data(query, limit=50))
+                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
             
             if all_posts_df.empty:
