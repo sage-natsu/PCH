@@ -132,7 +132,39 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
 
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
+    
+def group_terms(terms, group_size=5):
+   
+    return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
+        
 
+# Async function to fetch comments for a specific post
+async def fetch_comments(post_id, limit=100):
+    reddit = asyncpraw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT,
+    )
+    try:
+        post = await reddit.submission(id=post_id)
+        post.comment_sort = "top"
+        comments = []
+        for comment in post.comments:
+            if hasattr(comment, "body"):
+                sentiment, emotion = analyze_sentiment_and_emotion(comment.body)
+                comments.append({
+                    "Comment ID": comment.id,
+                    "Body": comment.body,
+                    "Score": comment.score,
+                    "Author": str(comment.author),
+                    "Created_UTC": datetime.utcfromtimestamp(comment.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
+                    "Sentiment": sentiment,
+                    "Emotion": emotion
+                })
+        return pd.DataFrame(comments)
+    except Exception as e:
+        st.error(f"Error fetching comments: {str(e)}")
+        return pd.DataFrame()
 
 # Generate heatmap
 def generate_heatmap(df):
@@ -217,7 +249,7 @@ def plot_sentiment_by_subreddit(df):
 
 # Main Streamlit app
 def main():
-    st.title("Simplified Sibling Project: Reddit Data Analysis Dashboard")
+    st.title("The Sibling Project: Reddit Data Analysis Dashboard")
 
     # Sidebar filter inputs
     st.sidebar.header("Filters and Configuration")
