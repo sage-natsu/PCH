@@ -106,7 +106,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
             "Author": str(submission.author),
             "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
             "Sentiment": sentiment,
-            "Emotion": emotion
+            "Emotion": emotion,
             # Post Metadata
             "Num_Comments": submission.num_comments,
             "Over_18": submission.over_18,
@@ -124,7 +124,6 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
             "Edited": submission.edited if submission.edited else "Not Edited",
         })
     return pd.DataFrame(data)
-    
 def group_terms(terms, group_size=5):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
