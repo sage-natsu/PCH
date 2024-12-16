@@ -107,6 +107,21 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
             "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
             "Sentiment": sentiment,
             "Emotion": emotion
+            # Post Metadata
+            "Num_Comments": submission.num_comments,
+            "Over_18": submission.over_18,
+            "URL": submission.url,
+            "Permalink": f"https://www.reddit.com{submission.permalink}",
+            "Upvote_Ratio": submission.upvote_ratio,
+            "Pinned": submission.stickied,
+            # Subreddit Metadata
+            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", "N/A"),
+            "Subreddit_Type": submission.subreddit.subreddit_type,
+            # Post Analytics
+            "Total_Awards_Received": submission.total_awards_received,
+            "Gilded": submission.gilded,
+            # Timestamps
+            "Edited": submission.edited if submission.edited else "Not Edited"		
         })
     return pd.DataFrame(data)
     
