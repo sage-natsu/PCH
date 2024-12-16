@@ -276,6 +276,11 @@ def main():
     # Subreddit filter
     subreddit_filter = st.sidebar.text_input("Subreddit (default: all)", value="all").strip()
     st.sidebar.write("Specify a subreddit or leave 'all' for general search across Reddit.")
+    st.sidebar.subheader("Exclusion Filter")
+    exclusion_input = st.sidebar.text_input("Exclude posts containing these words (comma-separated):", value="")
+    st.sidebar.write("Provide a comma-separated list of words to exclude posts containing them in the title or body.")
+    exclusion_words = [word.strip().lower() for word in exclusion_input.split(",") if word.strip()]
+    st.sidebar.write(f"Exclusion Words: {exclusion_words if exclusion_words else 'None'}")
 	
 	
     if start_date > end_date:
@@ -307,7 +312,13 @@ def main():
                     query = f"({disability}) AND ({sibling})"
                     praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
-            
+			
+            if exclusion_words:
+                all_posts_df = all_posts_df[
+                    ~all_posts_df["Title"].str.lower().str.contains("|".join(exclusion_words), na=False)
+                    & ~all_posts_df["Body"].str.lower().str.contains("|".join(exclusion_words), na=False)
+                ]
+
             if all_posts_df.empty:
                 st.warning("No posts found for the selected filters.")
             else:
