@@ -97,7 +97,8 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-        data.append({
+        # Prepare the post data
+        post_data = {
             "Post ID": submission.id,
             "Title": submission.title,
             "Body": submission.selftext,
@@ -107,23 +108,31 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
             "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
             "Sentiment": sentiment,
             "Emotion": emotion,
-            # Post Metadata
-            "Num_Comments": submission.num_comments,
-            "Over_18": submission.over_18,
-            "URL": submission.url,
-            "Permalink": f"https://www.reddit.com{submission.permalink}",
-            "Upvote_Ratio": submission.upvote_ratio,
-            "Pinned": submission.stickied,
-            # Subreddit Metadata
-            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", "N/A"),
-            "Subreddit_Type": submission.subreddit.subreddit_type,
-            # Post Analytics
-            "Total_Awards_Received": submission.total_awards_received,
-            "Gilded": submission.gilded,
-            # Timestamps
-            "Edited": submission.edited if submission.edited else "Not Edited",
-        })
-    return pd.DataFrame(data)
+        }
+
+        # Add extra data only if available
+        optional_attributes = {
+            "Num_Comments": getattr(submission, "num_comments", None),
+            "Over_18": getattr(submission, "over_18", None),
+            "URL": getattr(submission, "url", None),
+            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+            "Pinned": getattr(submission, "stickied", None),
+            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+            "Gilded": getattr(submission, "gilded", None),
+            "Edited": submission.edited if submission.edited else None,
+        }
+
+        # Add optional attributes if they are not None
+        for key, value in optional_attributes.items():
+            if value is not None:
+                post_data[key] = value
+
+        data.append(post_data)
+
+    return pd.DataFrame(data))
 def group_terms(terms, group_size=5):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
