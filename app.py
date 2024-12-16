@@ -3,7 +3,6 @@ import subprocess
 import sys
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
 try:
     import asyncpraw
     print("asyncpraw imported successfully!")
