@@ -122,7 +122,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
             "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
             "Total_Awards_Received": getattr(submission, "total_awards_received", None),
             "Gilded": getattr(submission, "gilded", None),
-            "Edited": submission.edited if submission.edited else None,
+            "Edited": submission.edited if submission.edited else None
         }
 
         # Add optional attributes if they are not None
