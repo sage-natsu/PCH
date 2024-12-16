@@ -82,15 +82,15 @@ def analyze_sentiment_and_emotion(text):
     return sentiment, emotion
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
+async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
     data = []
-    subreddit = await reddit.subreddit("all")
-    async for submission in subreddit.search(query, limit=limit):
+    subreddit_instance = await reddit.subreddit(subreddit)
+    async for submission in subreddit_instance.search(query, limit=limit):
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
@@ -257,6 +257,11 @@ def main():
     selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
     start_date = st.sidebar.date_input("Start Date")
     end_date = st.sidebar.date_input("End Date")
+
+    # Subreddit filter
+    subreddit_filter = st.sidebar.text_input("Subreddit (default: all)", value="all").strip()
+    st.sidebar.write("Specify a subreddit or leave 'all' for general search across Reddit.")
+	
 	
     if start_date > end_date:
         st.error("Start Date must be before End Date!")
@@ -268,7 +273,7 @@ def main():
     end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
-
+    st.write(f"Fetching data from subreddit: `{subreddit_filter}`.")
 
     # Initialize session states
     if "post_data" not in st.session_state:
@@ -285,7 +290,7 @@ def main():
             for disability in selected_disabilities:
                 for sibling in selected_siblings:
                     query = f"({disability}) AND ({sibling})"
-                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50))
+                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
             
             if all_posts_df.empty:
