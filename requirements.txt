@@ -1,8 +1,3 @@
---index-url https://download.pytorch.org/whl/cpu
-aiofiles
-aiohappyeyeballs
-aiohttp
-aiosignal
 altair
 streamlit
 asyncpraw
@@ -21,4 +16,4 @@ tqdm
 nltk
 scikit-learn
 fpdf
-torch==2.5.1 
+torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
