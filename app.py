@@ -121,7 +121,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50):
             "Total_Awards_Received": submission.total_awards_received,
             "Gilded": submission.gilded,
             # Timestamps
-            "Edited": submission.edited if submission.edited else "Not Edited"		
+            "Edited": submission.edited if submission.edited else "Not Edited",
         })
     return pd.DataFrame(data)
     
