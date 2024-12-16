@@ -57,7 +57,13 @@ sibling_terms = [
 ]
 
 # Additional keywords for struggles
-struggle_keywords = ["struggle", "challenge", "overlooked", "burden", "support", "difficulty"]
+struggle_keywords = [
+    "struggle", "challenge", "hardship", "difficulty", "burden", "overlooked",
+    "stress", "mental health", "guilt", "responsibility", "support", "compassion",
+    "caring", "caregiver", "overwhelmed", "anxious", "anxiety", "isolation", "loneliness",
+    "balance", "pressure", "burnout", "neglect"
+]
+
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -214,13 +220,22 @@ struggle_keywords = expand_struggle_keywords(struggle_keywords)
 print(f"Expanded struggle keywords: {struggle_keywords}")
 
 
+# filter_relevant_posts function
 def filter_relevant_posts(df):
+    expanded_emotions = ["Sad", "Angry", "Fearful", "Neutral", "Confused", "Overwhelmed", "Stressed"]
+
+    # Check for sibling context
+    df["Sibling_Context"] = df["Body"].str.contains("|".join(sibling_terms), case=False, na=False)
+
+    # Apply filters
     filtered_df = df[
-        (df["Sentiment"].isin(["Negative", "Neutral"])) & 
-        (df["Emotion"].isin(["Sad", "Angry", "Fearful"])) &
+        df["Sibling_Context"] & 
+        (df["Sentiment"].isin(["Negative", "Neutral", "Positive"])) & 
+        (df["Emotion"].isin(expanded_emotions)) & 
         (df["Body"].str.contains("|".join(struggle_keywords), case=False, na=False))
     ]
     return filtered_df
+
     
 def plot_emotion_radar(df):
     if df.empty:
