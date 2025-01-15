@@ -40,16 +40,18 @@ REDDIT_USER_AGENT = "windows:SiblingsDataApp:v1.0 (by /u/Proper-Leading-4091)"
 
 # Define disability and sibling terms
 disability_terms = [
-    "22q11.2 Deletion Syndrome", "ADHD", "Angelman Syndrome", "Autism", "Asperger",
-    "CDKL5 Deficiency Disorder", "Cerebral Palsy", "Cornelia de Lange Syndrome",
-    "Developmental Delay", "Developmental Disability", "Down Syndrome", "Epilepsy",
-    "Fetal Alcohol Syndrome", "Foetal Alcohol Syndrome", "Fragile X Syndrome", "Genetic condition",
-    "Global Developmental Delay", "Intellectual Disability", "MECP2 Duplication Disorder",
-    "Neurodivergent", "Neurodevelopmental Condition", "Prader-Willi Syndrome", "Rett Syndrome",
-    "Tourette’s Syndrome", "Tic Disorder", "Williams Syndrome", "NDIS", "Hereditary",
-    "ADD", "Aspergers", "Asperger's", "Aspie", "ASD", "Down's Syndrome", "Epileptic",
-    "Foetal Alcohol Spectrum Disorder", "FAS", "FASD", "NDC", "Intellectual impairment",
-    "Rett's Syndrome", "Tics", "William Syndrome", "Tourette Syndrome"
+    "22q11.2 Deletion Syndrome", "ADHD", "Attention Deficit Hyperactivity Disorder", "ADD", "Angelman Syndrome",
+    "Autism", "Autistic", "Asperger", "Aspergers", "Asperger's", "Aspie", "ASD", "CDKL5 Deficiency Disorder",
+    "Cerebral Palsy", "Cognitive delay", "Cognitively delayed", "Cornelia de Lange Syndrome", "Developmental Delay",
+    "Developmental Disability", "Disabled", "Delayed", "Down Syndrome", "Down's Syndrome", "Epilepsy", "Epileptic",
+    "Fetal Alcohol Syndrome", "Foetal Alcohol Syndrome", "Fetal Alcohol Spectrum Disorder", "Foetal Alcohol Spectrum Disorder",
+     "FAS", "FASD", "Foetal Alcohol Syndrome/Spectrum Disorder (FAS/FASD)", "Fragile X Syndrome", "Genetic condition",
+    "Hereditary condition", "Global Developmental Delay", "Intellectual Disability", "Intellectually disabled",
+     "Intellectual impairment", "MECP2 Duplication Disorder", "Mental delay", "Mentally delayed", "Mentally impaired",
+     "Neurodivergent", "Neurodiverse", "Neurospicy", "Neurodevelopmental Condition", "NDC", "Neurodevelopmental Disorder",
+     "Prader-Willi Syndrome", "Rett Syndrome", "Rett's Syndrome", "Tourette’s Syndrome", "Tourette Syndrome",
+     "Tic Disorder", "Tics", "Williams Syndrome", "William Syndrome", "NDIS", "Hereditary"
+
 ]
 
 sibling_terms = [
