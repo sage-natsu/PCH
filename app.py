@@ -40,22 +40,21 @@ REDDIT_USER_AGENT = "windows:SiblingsDataApp:v1.0 (by /u/Proper-Leading-4091)"
 
 # Define disability and sibling terms
 disability_terms = [
-    "22q11.2 Deletion Syndrome", "ADHD", "Attention Deficit Hyperactivity Disorder", "ADD", "Angelman Syndrome",
-    "Autism", "Autistic", "Asperger", "Aspergers", "Asperger's", "Aspie", "ASD", "CDKL5 Deficiency Disorder",
-    "Cerebral Palsy", "Cognitive delay", "Cognitively delayed", "Cornelia de Lange Syndrome", "Developmental Delay",
-    "Developmental Disability", "Disabled", "Delayed", "Down Syndrome", "Down's Syndrome", "Epilepsy", "Epileptic",
-    "Fetal Alcohol Syndrome", "Foetal Alcohol Syndrome", "Fetal Alcohol Spectrum Disorder", "Foetal Alcohol Spectrum Disorder",
-     "FAS", "FASD", "Foetal Alcohol Syndrome/Spectrum Disorder (FAS/FASD)", "Fragile X Syndrome", "Genetic condition",
-    "Hereditary condition", "Global Developmental Delay", "Intellectual Disability", "Intellectually disabled",
-     "Intellectual impairment", "MECP2 Duplication Disorder", "Mental delay", "Mentally delayed", "Mentally impaired",
-     "Neurodivergent", "Neurodiverse", "Neurospicy", "Neurodevelopmental Condition", "NDC", "Neurodevelopmental Disorder",
-     "Prader-Willi Syndrome", "Rett Syndrome", "Rett's Syndrome", "Tourette’s Syndrome", "Tourette Syndrome",
+    "22q11.2", "ADHD", "Attention Deficit Hyperactivity Disorder", "ADD", "Angelman", "Attention Deficit Disorder"
+    "Autism", "Autistic", "Asperger", "Aspergers", "Asperger's", "Aspie", "ASD", "CDKL5",
+    "Cerebral Palsy", "Cognitive delay", "Cognitively delayed", "Cornelia de Lange", "CP" , "Developmental Condition", "Developmental Delay","Developmental Disorder",
+    "Developmental Disability", "Disabled", "Disability", "Delayed", "Down Syndrome", "Down's Syndrome", "Downs Syndrome", "Epilepsy", "Epileptic",
+    "Fetal Alcohol", "Foetal Alcohol", "FAS", "FASD", "Fragile X", "Genetic condition", "Genetic Disorder", 
+     "Global Developmental Delay", "Intellectual Disability", "Intellectually disabled",
+     "Intellectual impairment", "MECP2", "Mental delay", "Mentally delayed", "Mentally impaired",
+     "Neurodivergent", "Neurodiverse", "Neurospicy", "Neurodevelopmental Condition", "NDC", "Neurodevelopmental Disorder", "Prader Willi",
+     "Prader-Willi", "Rett Syndrome", "Rett's Syndrome", "Retts Syndrome" , "Tourette’s", "Tourette", "Tourettes, 
      "Tic Disorder", "Tics", "Williams Syndrome", "William Syndrome", "NDIS", "Hereditary"
 
 ]
 
 sibling_terms = [
-    "Brother", "Sister", "Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs"
+    "Brother","Brothers", "Brother’s", "Sister", "Sisters", "","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
 ]
 
 # Additional keywords for struggles
