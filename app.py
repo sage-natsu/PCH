@@ -276,7 +276,11 @@ def main():
 
     # Subreddit filter
     subreddit_filter = st.sidebar.text_input("Subreddit (default: all)", value="all").strip()
-    st.sidebar.write("Specify a subreddit or leave 'all' for general search across Reddit.")
+    if not subreddit:
+    st.error("Subreddit filter cannot be empty. Please enter 'all' or specify subreddits.")
+    else:
+    st.success(f"Fetching data from subreddits: {subreddit}")	
+    st.sidebar.write("Specify subreddits or leave 'all' for general search across Reddit.")
     st.sidebar.subheader("Exclusion Filter")
     exclusion_input = st.sidebar.text_input("Exclude posts containing these words (comma-separated):", value="")
     st.sidebar.write("Provide a comma-separated list of words to exclude posts containing them in the title or body.")
