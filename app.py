@@ -48,7 +48,7 @@ disability_terms = [
      "Global Developmental Delay", "Intellectual Disability", "Intellectually disabled",
      "Intellectual impairment", "MECP2", "Mental delay", "Mentally delayed", "Mentally impaired",
      "Neurodivergent", "Neurodiverse", "Neurospicy", "Neurodevelopmental Condition", "NDC", "Neurodevelopmental Disorder", "Prader Willi",
-     "Prader-Willi", "Rett Syndrome", "Rett's Syndrome", "Retts Syndrome" , "Tourette’s", "Tourette", "Tourettes, 
+     "Prader-Willi", "Rett Syndrome", "Rett's Syndrome", "Retts Syndrome" , "Tourette’s", "Tourette", "Tourettes", 
      "Tic Disorder", "Tics", "Williams Syndrome", "William Syndrome", "NDIS", "Hereditary"
 
 ]
