@@ -54,7 +54,7 @@ disability_terms = [
 ]
 
 sibling_terms = [
-    "Brother","Brothers", "Brother’s", "Sister", "Sisters", "","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
+    "Brother","Brothers", "Brother’s", "Sister", "Sisters", "Sister’s","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
 ]
 
 # Additional keywords for struggles
