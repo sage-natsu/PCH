@@ -88,20 +88,36 @@ def analyze_sentiment_and_emotion(text):
     )
     return sentiment, emotion
 
-# Async function to fetch posts using PRAW
-async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddit="all"):
+# Modify fetch_praw_data function to handle subreddits input and optional sibling and disability term filters
+async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit="all", filter_sibling_disability=True):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
     data = []
-    subreddit_instance = await reddit.subreddit(subreddit)
+    
+    # If subreddits are provided (not "all"), filter by subreddit
+    if subreddit != "all":
+        subreddit_instance = await reddit.subreddit(subreddit)
+    else:
+        subreddit_instance = await reddit.subreddit("all")  # Use "all" if no subreddit filter is applied
+        
     async for submission in subreddit_instance.search(query, limit=limit):
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
+        
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+
+        # Check if sibling and disability term filters are to be applied
+        if filter_sibling_disability:
+            # Check if the post contains any of the sibling and disability terms
+            contains_sibling = any(term.lower() in submission.title.lower() or term.lower() in submission.selftext.lower() for term in sibling_terms)
+            contains_disability = any(term.lower() in submission.title.lower() or term.lower() in submission.selftext.lower() for term in disability_terms)
+            if not (contains_sibling and contains_disability):
+                continue  # Skip the post if it doesn't contain both sibling and disability terms
+
         # Prepare the post data
         post_data = {
             "Post ID": submission.id,
@@ -139,7 +155,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
 
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
-    
+
 def group_terms(terms, group_size=5):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
@@ -222,19 +238,23 @@ print(f"Expanded struggle keywords: {struggle_keywords}")
 
 
 # filter_relevant_posts function
-def filter_relevant_posts(df):
-    expanded_emotions = ["Sad", "Angry", "Fearful", "Neutral", "Confused", "Overwhelmed", "Stressed"]
-
-    # Check for sibling context
-    df["Sibling_Context"] = df["Body"].str.contains("|".join(sibling_terms), case=False, na=False)
-
-    # Apply filters
-    filtered_df = df[
-        df["Sibling_Context"] & 
-        (df["Sentiment"].isin(["Negative", "Neutral", "Positive"])) & 
-        (df["Emotion"].isin(expanded_emotions)) & 
-        (df["Body"].str.contains("|".join(struggle_keywords), case=False, na=False))
-    ]
+def filter_relevant_posts(df, filter_sibling_disability=True):
+    if filter_sibling_disability:
+        # Apply sibling and disability term filters
+        df["Sibling_Context"] = df["Body"].str.contains("|".join(sibling_terms), case=False, na=False)
+        df["Disability_Context"] = df["Body"].str.contains("|".join(disability_terms), case=False, na=False)
+        filtered_df = df[
+            df["Sibling_Context"] & 
+            df["Disability_Context"] & 
+            (df["Sentiment"].isin(["Negative", "Neutral", "Positive"])) & 
+            (df["Emotion"].isin(["Sad", "Angry", "Fearful", "Neutral", "Overwhelmed", "Stressed"]))
+        ]
+    else:
+        # If sibling and disability filters are not applied, just filter based on sentiment and emotion
+        filtered_df = df[
+            (df["Sentiment"].isin(["Negative", "Neutral", "Positive"])) & 
+            (df["Emotion"].isin(["Sad", "Angry", "Fearful", "Neutral", "Overwhelmed", "Stressed"]))
+        ]
     return filtered_df
 
     
@@ -269,12 +289,16 @@ def main():
 
     # Sidebar filter inputs
     st.sidebar.header("Filters and Configuration")
+    # Streamlit checkbox for filtering sibling and disability terms
+    filter_sibling_disability = st.checkbox('Apply sibling and disability filters', value=True)
+	
     selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
     selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
     start_date = st.sidebar.date_input("Start Date")
     end_date = st.sidebar.date_input("End Date")
 
     # Subreddit filter
+    	
     subreddit_filter = st.sidebar.text_input("Subreddit (default: all)", value="all").strip()	
     st.sidebar.write("Specify subreddits or leave 'all' for general search across Reddit.")
     st.sidebar.subheader("Exclusion Filter")
@@ -310,7 +334,7 @@ def main():
             all_posts_df = pd.DataFrame()
             for disability in selected_disabilities:
                 for sibling in selected_siblings:
-                    query = f"({disability}) AND ({sibling})"
+                    query = 									""
                     praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
 			
