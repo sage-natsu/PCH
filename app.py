@@ -89,56 +89,68 @@ def analyze_sentiment_and_emotion(text):
     return sentiment, emotion
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddit="all"):
+
+
+# Async function to fetch posts using PRAW
+async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
     data = []
-    subreddit_instance = await reddit.subreddit(subreddit)
-    async for submission in subreddit_instance.search(query, limit=limit):
-        created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-        if not (start_date_utc <= created_date <= end_date_utc):
-            continue
-        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-        # Prepare the post data
-        post_data = {
-            "Post ID": submission.id,
-            "Title": submission.title,
-            "Body": submission.selftext,
-            "Upvotes": submission.score,
-            "Subreddit": submission.subreddit.display_name,
-            "Author": str(submission.author),
-            "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "Sentiment": sentiment,
-            "Emotion": emotion,
-        }
+    
+    # Split subreddit input by commas and strip whitespace
+    subreddit_list = [sub.strip() for sub in subreddit.split(",")]
 
-        # Add extra data only if available
-        optional_attributes = {
-            "Num_Comments": getattr(submission, "num_comments", None),
-            "Over_18": getattr(submission, "over_18", None),
-            "URL": getattr(submission, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-            "Pinned": getattr(submission, "stickied", None),
-            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-            "Gilded": getattr(submission, "gilded", None),
-            "Edited": submission.edited if submission.edited else None
-        }
+    for sub in subreddit_list:
+        try:
+            subreddit_instance = await reddit.subreddit(sub)
+            async for submission in subreddit_instance.search(query, limit=limit):
+                created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+                if not (start_date_utc <= created_date <= end_date_utc):
+                    continue
+                sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+                # Prepare the post data
+                post_data = {
+                    "Post ID": submission.id,
+                    "Title": submission.title,
+                    "Body": submission.selftext,
+                    "Upvotes": submission.score,
+                    "Subreddit": submission.subreddit.display_name,
+                    "Author": str(submission.author),
+                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                    "Sentiment": sentiment,
+                    "Emotion": emotion,
+                }
 
-        # Add optional attributes if they are not None
-        for key, value in optional_attributes.items():
-            if value is not None:
-                post_data[key] = value
+                # Add extra data only if available
+                optional_attributes = {
+                    "Num_Comments": getattr(submission, "num_comments", None),
+                    "Over_18": getattr(submission, "over_18", None),
+                    "URL": getattr(submission, "url", None),
+                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                    "Pinned": getattr(submission, "stickied", None),
+                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                    "Gilded": getattr(submission, "gilded", None),
+                    "Edited": submission.edited if submission.edited else None
+                }
 
-        data.append(post_data)
+                # Add optional attributes if they are not None
+                for key, value in optional_attributes.items():
+                    if value is not None:
+                        post_data[key] = value
+
+                data.append(post_data)
+        except Exception as e:
+            print(f"Error fetching data from subreddit '{sub}': {e}")
 
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
+
     
 def group_terms(terms, group_size=5):
    
