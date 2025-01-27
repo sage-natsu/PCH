@@ -310,7 +310,7 @@ def main():
             all_posts_df = pd.DataFrame()
             for disability in selected_disabilities:
                 for sibling in selected_siblings:
-                    query = f"({disability}) AND ({sibling})"
+                    query = f"({' OR '.join(d_batch)}) AND ({' OR '.join(s_batch)})"
                     praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
 			
