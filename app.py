@@ -140,7 +140,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
-def group_terms(terms, group_size=5):
+def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
         
