@@ -318,7 +318,7 @@ def main():
                     query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
                     praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
-	    end_time = time.time()  # End the timer
+            end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
                 all_posts_df = all_posts_df[
