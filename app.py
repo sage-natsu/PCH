@@ -203,39 +203,39 @@ def get_synonyms(word):
     return list(synonyms)
 
 # Extend struggle_keywords with synonyms
-def expand_struggle_keywords(keywords):
-    expanded_keywords = set(keywords)
-    for word in keywords:
-        expanded_keywords.update(get_synonyms(word))
-    return list(expanded_keywords)
+#def expand_struggle_keywords(keywords):
+#    expanded_keywords = set(keywords)
+#    for word in keywords:
+ #       expanded_keywords.update(get_synonyms(word))
+#    return list(expanded_keywords)
     
     
 
 # Initial struggle keywords
-struggle_keywords = [
-    "struggle", "challenge", "hardship", "difficulty", "burden", "overlooked"
-]
+#struggle_keywords = [
+#    "struggle", "challenge", "hardship", "difficulty", "burden", "overlooked"
+#]
 
 # Dynamically expand struggle_keywords
-struggle_keywords = expand_struggle_keywords(struggle_keywords)
-print(f"Expanded struggle keywords: {struggle_keywords}")
+#struggle_keywords = expand_struggle_keywords(struggle_keywords)
+#print(f"Expanded struggle keywords: {struggle_keywords}")
 
 
 # filter_relevant_posts function
-def filter_relevant_posts(df):
-    expanded_emotions = ["Sad", "Angry", "Fearful", "Neutral", "Confused", "Overwhelmed", "Stressed"]
+# def filter_relevant_posts(df):
+#    expanded_emotions = ["Sad", "Angry", "Fearful", "Neutral", "Confused", "Overwhelmed", "Stressed"]
 
     # Check for sibling context
-    df["Sibling_Context"] = df["Body"].str.contains("|".join(sibling_terms), case=False, na=False)
+#    df["Sibling_Context"] = df["Body"].str.contains("|".join(sibling_terms), case=False, na=False)
 
     # Apply filters
-    filtered_df = df[
-        df["Sibling_Context"] & 
-        (df["Sentiment"].isin(["Negative", "Neutral", "Positive"])) & 
-        (df["Emotion"].isin(expanded_emotions)) & 
-        (df["Body"].str.contains("|".join(struggle_keywords), case=False, na=False))
-    ]
-    return filtered_df
+#    filtered_df = df[
+ #       df["Sibling_Context"] & 
+ #       (df["Sentiment"].isin(["Negative", "Neutral", "Positive"])) & 
+  #      (df["Emotion"].isin(expanded_emotions)) & 
+  #      (df["Body"].str.contains("|".join(struggle_keywords), case=False, na=False))
+#    ]
+ #   return filtered_df
 
     
 def plot_emotion_radar(df):
@@ -331,14 +331,14 @@ def main():
                 st.write(f"Total fetched records: {len(all_posts_df)}")
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-
+'''
                 # Filter and display relevant posts
                 relevant_posts = filter_relevant_posts(all_posts_df)
                 st.session_state.post_data = relevant_posts
                 st.write(f"Total relevant records: {len(relevant_posts)}")
                 st.subheader("Relevant Posts")
                 st.dataframe(relevant_posts)
-                        
+'''                        
                     
 		
                 # Top 5 Subreddits
