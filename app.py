@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import subprocess
+import time  # Import the time module
 import sys
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -310,13 +311,15 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
+	    start_time = time.time()  # Start the timer	
             all_posts_df = pd.DataFrame()
             for disability in disability_batches:
                 for sibling in sibling_batches:
                     query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
                     praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
-			
+	    end_time = time.time()  # End the timer
+            elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
                 all_posts_df = all_posts_df[
                     ~all_posts_df["Title"].str.lower().str.contains("|".join(exclusion_words), na=False)
@@ -329,6 +332,7 @@ def main():
                 # Save and display all posts
                 st.session_state.all_posts = all_posts_df
                 st.write(f"Total fetched records: {len(all_posts_df)}")
+		st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
 
