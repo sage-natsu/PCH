@@ -296,6 +296,9 @@ def main():
     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
     st.write(f"Fetching data from subreddit: `{subreddit_filter}`.")
 
+    disability_batches = group_terms(selected_disabilities)
+    sibling_batches = group_terms(selected_siblings)	
+
     # Initialize session states
     if "post_data" not in st.session_state:
         st.session_state.post_data = pd.DataFrame()
@@ -308,8 +311,6 @@ def main():
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
             all_posts_df = pd.DataFrame()
-	    disability_batches = group_terms(selected_disabilities)
-            sibling_batches = group_terms(selected_siblings)	
             for disability in disability_batches:
                 for sibling in sibling_batches:
                     query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
