@@ -308,9 +308,11 @@ def main():
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
             all_posts_df = pd.DataFrame()
-            for disability in selected_disabilities:
-                for sibling in selected_siblings:
-                    query = f"({' OR '.join(d_batch)}) AND ({' OR '.join(s_batch)})"
+	    disability_batches = group_terms(selected_disabilities)
+            sibling_batches = group_terms(selected_siblings)	
+            for disability in disability_batches:
+                for sibling in sibling_batches:
+                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
                     praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
 			
