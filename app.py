@@ -331,22 +331,23 @@ def main():
                 st.write(f"Total fetched records: {len(all_posts_df)}")
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-
+'''
                 # Filter and display relevant posts
                 relevant_posts = filter_relevant_posts(all_posts_df)
                 st.session_state.post_data = relevant_posts
                 st.write(f"Total relevant records: {len(relevant_posts)}")
                 st.subheader("Relevant Posts")
                 st.dataframe(relevant_posts)
-
-            	# Top 5 Subreddits
-            	st.subheader("Top 5 Popular Subreddits")
-            	top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
-            	st.bar_chart(top_subreddits)
+'''
+                # Top 5 Subreddits
+                st.subheader("Top 5 Popular Subreddits")
+                top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
+                st.bar_chart(top_subreddits)
 
                 # Word Cloud
                 st.subheader("Word Cloud of Post Titles")
                 create_wordcloud(" ".join(all_posts_df["Title"].dropna()), "Post Titles Word Cloud")
+
 
                 # Post Highlights
                 st.subheader("Post Highlights")
