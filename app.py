@@ -341,10 +341,10 @@ def main():
 '''                        
                     
 		
-                # Top 5 Subreddits
-                st.subheader("Top 5 Popular Subreddits")
-                top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
-                st.bar_chart(top_subreddits)
+            # Top 5 Subreddits
+            st.subheader("Top 5 Popular Subreddits")
+            top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
+            st.bar_chart(top_subreddits)
 
                 # Word Cloud
                 st.subheader("Word Cloud of Post Titles")
