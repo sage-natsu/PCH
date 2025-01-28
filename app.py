@@ -331,6 +331,13 @@ def main():
                 st.write(f"Total fetched records: {len(all_posts_df)}")
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
+
+                # Filter and display relevant posts
+                relevant_posts = filter_relevant_posts(all_posts_df)
+                st.session_state.post_data = relevant_posts
+                st.write(f"Total relevant records: {len(relevant_posts)}")
+                st.subheader("Relevant Posts")
+                st.dataframe(relevant_posts)
                         		
             	# Top 5 Subreddits
             	st.subheader("Top 5 Popular Subreddits")
