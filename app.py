@@ -338,7 +338,7 @@ def main():
                 st.write(f"Total relevant records: {len(relevant_posts)}")
                 st.subheader("Relevant Posts")
                 st.dataframe(relevant_posts)
-                        		
+
             	# Top 5 Subreddits
             	st.subheader("Top 5 Popular Subreddits")
             	top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
