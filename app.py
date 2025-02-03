@@ -19,6 +19,7 @@ from wordcloud import WordCloud
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.express as px
 import seaborn as sns
+import re
 import nltk
 nltk.download('wordnet')
 
@@ -33,6 +34,14 @@ nest_asyncio.apply()
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
+# Expanded sibling-related phrases
+expanded_sibling_phrases = [
+    "I have a brother", "I have a sister", "My sibling has", "Caring for my brother", "Supporting my sister",
+    "My twin has", "Sibling with autism", "Growing up with a disabled sibling"
+]
+
+# Priority subreddits dynamically expandable
+priority_subreddits = ["SiblingSupport", "GlassChildren", "DisabledSiblings"]
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
@@ -66,6 +75,11 @@ struggle_keywords = [
     "balance", "pressure", "burnout", "neglect"
 ]
 
+# Function for keyword highlighting
+def highlight_keywords(text, keywords):
+    for keyword in keywords:
+        text = text.replace(keyword, f'<span style="background-color:yellow">{keyword}</span>')
+    return text
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -103,11 +117,15 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+        # Highlight keywords in title and body
+        highlighted_title = highlight_keywords(submission.title, sibling_terms + disability_terms + expanded_sibling_phrases)
+        highlighted_body = highlight_keywords(submission.selftext, sibling_terms + disability_terms + expanded_sibling_phrases)
+        
         # Prepare the post data
         post_data = {
             "Post ID": submission.id,
-            "Title": submission.title,
-            "Body": submission.selftext,
+            "Title": highlighted_title,
+            "Body": highlighted_body,
             "Upvotes": submission.score,
             "Subreddit": submission.subreddit.display_name,
             "Author": str(submission.author),
@@ -141,6 +159,15 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
+# Global search combining sibling phrases and priority subreddits
+def execute_search(selected_subreddits, global_search_terms):
+    all_results = pd.DataFrame()
+    for subreddit in selected_subreddits + ["all"]:
+        for term in global_search_terms:
+            praw_df = asyncio.run(fetch_praw_data(term, start_date_utc, end_date_utc, subreddit=subreddit))
+            all_results = pd.concat([all_results, praw_df], ignore_index=True)
+    return all_results.drop_duplicates(subset=["Post ID"])
+
 def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
@@ -287,10 +314,10 @@ def main():
 	
     if start_date > end_date:
         st.error("Start Date must be before End Date!")
-        
-     
-	
+        return
+
     # Convert selected dates to UTC
+    global start_date_utc, end_date_utc
     start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
     end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
@@ -479,6 +506,20 @@ def main():
             key="download_comments"  # Unique key for comments
         )
 
+    # Search logic
+    if st.sidebar.button("Fetch Data"):
+        with st.spinner("Fetching data... Please wait."):
+            # Priority subreddit search
+            st.subheader("Fetching Priority Subreddits")
+            priority_results = execute_search(priority_subreddits, selected_disabilities + selected_siblings)
+            st.write(f"Priority Subreddit Records: {len(priority_results)}")
+            st.dataframe(priority_results)
+            
+            # Global search
+            st.subheader("Global Search with Expanded Phrases")
+            global_results = execute_search(["all"], expanded_sibling_phrases + selected_disabilities + selected_siblings)
+            st.write(f"Global Search Records: {len(global_results)}")
+            st.dataframe(global_results)
 
 if __name__ == "__main__":
     main()
