@@ -19,7 +19,6 @@ from wordcloud import WordCloud
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.express as px
 import seaborn as sns
-import re
 import nltk
 nltk.download('wordnet')
 
@@ -34,14 +33,6 @@ nest_asyncio.apply()
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
-# Expanded sibling-related phrases
-expanded_sibling_phrases = [
-    "I have a brother", "I have a sister", "My sibling has", "Caring for my brother", "Supporting my sister",
-    "My twin has", "Sibling with autism", "Growing up with a disabled sibling"
-]
-
-# Priority subreddits dynamically expandable
-priority_subreddits = ["SiblingSupport", "GlassChildren", "DisabledSiblings"]
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
@@ -75,11 +66,66 @@ struggle_keywords = [
     "balance", "pressure", "burnout", "neglect"
 ]
 
-# Function for keyword highlighting
-def highlight_keywords(text, keywords):
-    for keyword in keywords:
-        text = text.replace(keyword, f'<span style="background-color:yellow">{keyword}</span>')
-    return text
+
+expanded_sibling_phrases = [
+    "I have a brother", "I have a sister", "I have siblings", "my twin", "my bro", "my sis", 
+    "my siblings", "my younger sibling", "my older sibling", "growing up with my sibling",
+    "responsibility for my sibling", "helping my sibling", "caring for my brother", 
+    "caring for my sister", "my brother cares", "my sister cares", 
+    "my sibling needs support", "my sibling has a disability", 
+    "living with a sibling with autism", "supporting my disabled sibling",
+    "growing up with a disabled sibling", "my sibling struggles", 
+    "my sibling needs help", "balancing my life and sibling responsibilities", 
+    "mental stress from sibling care", "how my sibling affects my life",
+    "my brother with autism", "my sister with Down syndrome", 
+    "challenges with my sibling", "my sibling’s disability", "coping with sibling issues", 
+    "how my sibling impacts me", "supporting my younger brother", 
+    "helping my autistic sibling", "my sibling depends on me", 
+    "being a twin and sharing responsibilities", "sharing a home with my brother", 
+    "my sister is my best friend", "sibling emotional support", "guilt about my sibling", 
+    "the pressure of sibling care", "overlooked because of my sibling", 
+    "my brother’s challenges", "my sister’s struggles", 
+    "autistic sibling experiences", "balancing school and sibling care", 
+    "protecting my younger brother", "protecting my sister",
+    "I feel isolated due to sibling care", "burnout from supporting my sibling",
+    "my sibling relationship is complicated", "my sibling’s behavior affects me", 
+    "coping with sibling-related stress", "dealing with my sibling’s meltdowns", 
+    "my sibling’s special needs", "I’m responsible for my sibling", 
+    "handling sibling emotions", "my sibling’s impact on my family", 
+    "navigating life with a sibling with special needs", "how my sibling shaped my childhood",
+    "my role in my sibling’s life", "managing my sibling’s issues",
+    "my sibling’s developmental delay", "teaching my sibling basic skills",
+    "we share everything as siblings", "my disabled brother", 
+    "my disabled sister", "siblings of kids with disabilities", 
+    "siblings of neurodivergent kids", "being the sibling of a special needs child", 
+    "my life revolves around my sibling’s care", "siblings of children with learning disabilities", 
+    "how I manage life with a sibling who has ADHD", 
+    "parentification because of my sibling", "being a carer for my sibling", 
+    "helping my sibling with their homework", "we share a room as siblings",
+    "being there for my brother", "helping my sibling adjust to school", 
+    "coping with my sibling’s disability", "managing sibling stress",
+    "I’m the older sibling of a disabled child", "being the younger sibling of someone with autism"
+]
+
+# Function to discover sibling-related subreddits dynamically
+async def discover_sibling_related_subreddits():
+    reddit = asyncpraw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT,
+    )
+    sibling_related_subreddits = set()
+
+    # List of keywords for sibling-related discovery
+    sibling_keywords = ["siblingsupport", "glasschildren", "specialneedsiblings"]
+
+    for keyword in sibling_keywords:
+        subreddit_search = await reddit.subreddits.search_by_name(keyword, include_nsfw=False)
+        for subreddit in subreddit_search:
+            sibling_related_subreddits.add(subreddit.display_name)
+
+    return list(sibling_related_subreddits)
+
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -117,15 +163,11 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-        # Highlight keywords in title and body
-        highlighted_title = highlight_keywords(submission.title, sibling_terms + disability_terms + expanded_sibling_phrases)
-        highlighted_body = highlight_keywords(submission.selftext, sibling_terms + disability_terms + expanded_sibling_phrases)
-        
         # Prepare the post data
         post_data = {
             "Post ID": submission.id,
-            "Title": highlighted_title,
-            "Body": highlighted_body,
+            "Title": submission.title,
+            "Body": submission.selftext,
             "Upvotes": submission.score,
             "Subreddit": submission.subreddit.display_name,
             "Author": str(submission.author),
@@ -159,15 +201,6 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
-# Global search combining sibling phrases and priority subreddits
-def execute_search(selected_subreddits, global_search_terms):
-    all_results = pd.DataFrame()
-    for subreddit in selected_subreddits + ["all"]:
-        for term in global_search_terms:
-            praw_df = asyncio.run(fetch_praw_data(term, start_date_utc, end_date_utc, subreddit=subreddit))
-            all_results = pd.concat([all_results, praw_df], ignore_index=True)
-    return all_results.drop_duplicates(subset=["Post ID"])
-
 def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
@@ -314,10 +347,12 @@ def main():
 	
     if start_date > end_date:
         st.error("Start Date must be before End Date!")
-        return
-
+        
+    if st.sidebar.button("Discover Sibling-Related Subreddits"):
+        sibling_subreddits = asyncio.run(discover_sibling_related_subreddits())
+        st.write(f"Discovered sibling-related subreddits: {', '.join(sibling_subreddits)}") 
+	
     # Convert selected dates to UTC
-    global start_date_utc, end_date_utc
     start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
     end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
@@ -342,7 +377,8 @@ def main():
             all_posts_df = pd.DataFrame()
             for disability in disability_batches:
                 for sibling in sibling_batches:
-                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
+                    for phrase in expanded_sibling_phrases:
+                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)}) AND ({phrase})"
                     praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
             end_time = time.time()  # End the timer
@@ -506,20 +542,6 @@ def main():
             key="download_comments"  # Unique key for comments
         )
 
-    # Search logic
-    if st.sidebar.button("Fetch Data"):
-        with st.spinner("Fetching data... Please wait."):
-            # Priority subreddit search
-            st.subheader("Fetching Priority Subreddits")
-            priority_results = execute_search(priority_subreddits, selected_disabilities + selected_siblings)
-            st.write(f"Priority Subreddit Records: {len(priority_results)}")
-            st.dataframe(priority_results)
-            
-            # Global search
-            st.subheader("Global Search with Expanded Phrases")
-            global_results = execute_search(["all"], expanded_sibling_phrases + selected_disabilities + selected_siblings)
-            st.write(f"Global Search Records: {len(global_results)}")
-            st.dataframe(global_results)
 
 if __name__ == "__main__":
     main()
