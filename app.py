@@ -379,7 +379,7 @@ def main():
                 for sibling in sibling_batches:
                     for phrase in expanded_sibling_phrases:
                         query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)}) AND ({phrase})"
-                   	praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
+                        praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     	all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
