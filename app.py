@@ -170,20 +170,20 @@ async def fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limi
                     "Emotion": emotion,
                }
 
-	       # Add extra data only if available
-	       optional_attributes = {
-	           "Num_Comments": getattr(submission, "num_comments", None),
-	            "Over_18": getattr(submission, "over_18", None),
-	            "URL": getattr(submission, "url", None),
-	            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-	            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-	            "Pinned": getattr(submission, "stickied", None),
-	            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-	            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-	            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-	            "Gilded": getattr(submission, "gilded", None),
-	            "Edited": submission.edited if submission.edited else None
-	        }
+        # Add extra data only if available
+        optional_attributes = {
+            "Num_Comments": getattr(submission, "num_comments", None),
+            "Over_18": getattr(submission, "over_18", None),
+            "URL": getattr(submission, "url", None),
+            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+            "Pinned": getattr(submission, "stickied", None),
+            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+            "Gilded": getattr(submission, "gilded", None),
+            "Edited": submission.edited if submission.edited else None
+        }
 
         # Add optional attributes if they are not None
         for key, value in optional_attributes.items():
