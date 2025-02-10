@@ -170,9 +170,9 @@ async def fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limi
                     "Emotion": emotion,
                }
 
-	        # Add extra data only if available
-	        optional_attributes = {
-	            "Num_Comments": getattr(submission, "num_comments", None),
+	       # Add extra data only if available
+	       optional_attributes = {
+	           "Num_Comments": getattr(submission, "num_comments", None),
 	            "Over_18": getattr(submission, "over_18", None),
 	            "URL": getattr(submission, "url", None),
 	            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
