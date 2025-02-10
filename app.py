@@ -543,13 +543,13 @@ def main():
             # Apply highlighting to comment body
             st.session_state.comments_data["Highlighted Body"] = st.session_state.comments_data["Body"].apply(
                 lambda x: highlight_terms(str(x), sibling_terms, disability_terms, sibling_experience_phrases)
-            )
+        )
 
-       # Display highlighted comments using st.markdown
-       st.subheader("Highlighted Comments")
-       for idx, row in st.session_state.comments_data.iterrows():
-           st.markdown(f"**Comment:** {row['Highlighted Body']}", unsafe_allow_html=True)
-           st.markdown("---")  # Separator between comments
+        # Display highlighted comments using st.markdown
+        st.subheader("Highlighted Comments")
+        for idx, row in st.session_state.comments_data.iterrows():
+            st.markdown(f"**Comment:** {row['Highlighted Body']}", unsafe_allow_html=True)
+            st.markdown("---")  # Separator between comments
 
 
 
