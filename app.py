@@ -330,7 +330,13 @@ def main():
     selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
     selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
     start_date = st.sidebar.date_input("Start Date")
-    end_date = st.sidebar.date_input("End Date")
+    end_date = st.sidebar.date_input("End Date") 
+	
+    # Initialize session states to avoid AttributeError
+    if "all_posts_df" not in st.session_state:
+        st.session_state.all_posts_df = pd.DataFrame()
+
+	
 
     # Subreddit filter
     subreddit_filter = st.sidebar.text_input("Subreddit (default: all)", value="all").strip()	
