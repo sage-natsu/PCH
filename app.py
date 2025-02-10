@@ -66,6 +66,57 @@ struggle_keywords = [
     "balance", "pressure", "burnout", "neglect"
 ]
 
+expanded_sibling_phrases = [
+    "I have a brother", "I have a sister", "I have siblings", "my twin", "my bro", "my sis", 
+    "my siblings", "my younger sibling", "my older sibling", "growing up with my sibling",
+    "responsibility for my sibling", "helping my sibling", "caring for my brother", 
+    "caring for my sister", "my brother cares", "my sister cares", 
+    "my sibling needs support", "my sibling has a disability", 
+    "living with a sibling with autism", "supporting my disabled sibling",
+    "growing up with a disabled sibling", "my sibling struggles", 
+    "my sibling needs help", "balancing my life and sibling responsibilities", 
+    "mental stress from sibling care", "how my sibling affects my life",
+    "my brother with autism", "my sister with Down syndrome", 
+    "challenges with my sibling", "my sibling’s disability", "coping with sibling issues", 
+    "how my sibling impacts me", "supporting my younger brother", 
+    "helping my autistic sibling", "my sibling depends on me", 
+    "being a twin and sharing responsibilities", "sharing a home with my brother", 
+    "my sister is my best friend", "sibling emotional support", "guilt about my sibling", 
+    "the pressure of sibling care", "overlooked because of my sibling", 
+    "my brother’s challenges", "my sister’s struggles", 
+    "autistic sibling experiences", "balancing school and sibling care", 
+    "protecting my younger brother", "protecting my sister",
+    "I feel isolated due to sibling care", "burnout from supporting my sibling",
+    "my sibling relationship is complicated", "my sibling’s behavior affects me", 
+    "coping with sibling-related stress", "dealing with my sibling’s meltdowns", 
+    "my sibling’s special needs", "I’m responsible for my sibling", 
+    "handling sibling emotions", "my sibling’s impact on my family", 
+    "navigating life with a sibling with special needs", "how my sibling shaped my childhood",
+    "my role in my sibling’s life", "managing my sibling’s issues",
+    "my sibling’s developmental delay", "teaching my sibling basic skills",
+    "we share everything as siblings", "my disabled brother", 
+    "my disabled sister", "siblings of kids with disabilities", 
+    "siblings of neurodivergent kids", "being the sibling of a special needs child", 
+    "my life revolves around my sibling’s care", "siblings of children with learning disabilities", 
+    "how I manage life with a sibling who has ADHD", 
+    "parentification because of my sibling", "being a carer for my sibling", 
+    "helping my sibling with their homework", "we share a room as siblings",
+    "being there for my brother", "helping my sibling adjust to school", 
+    "coping with my sibling’s disability", "managing sibling stress",
+    "I’m the older sibling of a disabled child", "being the younger sibling of someone with autism"
+]
+def has_sibling_experience(post_text):
+    post_text = post_text.lower()
+
+    # Check for any sibling term and any disability term
+    sibling_check = any(sibling.lower() in post_text for sibling in sibling_terms)
+    disability_check = any(disability.lower() in post_text for disability in disability_terms)
+
+    # Check for sibling-specific experience phrases
+    experience_check = any(phrase in post_text for phrase in sibling_experience_phrases)
+
+    return sibling_check and disability_check and experience_check
+
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -102,7 +153,13 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
-        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+        post_text = (submission.title + " " + submission.selftext).lower()
+        # **Check for proper sibling experience context**
+        if not has_sibling_experience(post_text):
+            continue  # Skip post if it doesn't meet the criteria
+	    
+		
+        sentiment, emotion = analyze_sentiment_and_emotion(post_text)
         # Prepare the post data
         post_data = {
             "Post ID": submission.id,
@@ -312,12 +369,23 @@ def main():
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	
+            # Prioritize sibling-specific subreddits, then search globally
+            subreddits_to_search = ["SiblingSupport", "GlassChildren", "DisabledSiblings", subreddit_filter]
+            queries = [
+                f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
+                for disability in disability_batches
+                for sibling in sibling_batches
+            ]		
+		
             all_posts_df = pd.DataFrame()
-            for disability in disability_batches:
-                for sibling in sibling_batches:
-                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
-                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
-                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+            for subreddit in subreddits_to_search:
+            for query in queries:
+                praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit=subreddit))
+                all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+
+            # Drop duplicates based on Post ID
+            all_posts_df = all_posts_df.drop_duplicates(subset=["Post ID"])		
+            
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
@@ -412,11 +480,11 @@ def main():
             key="download_relevant_posts"  # Unique key for relevant posts
         )
     # Download All Posts
-    if not st.session_state.all_posts.empty:
+    if not st.session_state.all_posts_df.empty:
         st.sidebar.download_button(
             "Download All Posts",
-            st.session_state.all_posts.to_csv(index=False),
-            file_name="all_posts.csv",
+            st.session_state.all_posts_df.to_csv(index=False),
+            file_name="all_posts_df.csv",
             key="download_all_posts"  # Unique key for all posts
         )
 
