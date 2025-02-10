@@ -157,7 +157,8 @@ async def fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limi
         for subreddit in subreddits:    
             subreddit_instance = await reddit.subreddit(subreddit)
             async for submission in subreddit_instance.search(query, limit=limit):
-            try:
+            try:    
+            
                 # Ensure submission is valid before accessing attributes
                 if submission is None:
                     continue
