@@ -66,7 +66,7 @@ struggle_keywords = [
     "balance", "pressure", "burnout", "neglect"
 ]
 
-expanded_sibling_phrases = [
+sibling_experience_phrases = [
     "I have a brother", "I have a sister", "I have siblings", "my twin", "my bro", "my sis", 
     "my siblings", "my younger sibling", "my older sibling", "growing up with my sibling",
     "responsibility for my sibling", "helping my sibling", "caring for my brother", 
