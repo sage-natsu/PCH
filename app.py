@@ -21,6 +21,7 @@ import plotly.express as px
 import seaborn as sns
 import nltk
 nltk.download('wordnet')
+pip install termcolor
 from termcolor import colored
 import re
 
