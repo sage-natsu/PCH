@@ -348,7 +348,7 @@ def main():
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
             queries = [
-                f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)}) AND ({phrase})"
+                f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)}) OR ({phrase})"
                 for disability in disability_batches
                 for sibling in sibling_batches
                 for phrase in expanded_sibling_phrases
