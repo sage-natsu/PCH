@@ -384,6 +384,7 @@ def main():
             ]		
 		
             all_posts_df = pd.DataFrame()
+	    st.session_state.all_posts_df = all_posts_df	
             for subreddit in subreddits_to_search:
                 for query in queries:
                     praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit=subreddit))
@@ -476,15 +477,7 @@ def main():
 
                 
 
-    # Download buttons
-    # Download Relevant Posts
-    if not st.session_state.post_data.empty:
-        st.sidebar.download_button(
-            "Download Relevant Posts",
-            st.session_state.post_data.to_csv(index=False),
-            file_name="relevant_posts.csv",
-            key="download_relevant_posts"  # Unique key for relevant posts
-        )
+ 
     # Download All Posts
     if not st.session_state.all_posts_df.empty:
         st.sidebar.download_button(
