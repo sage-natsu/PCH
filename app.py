@@ -384,7 +384,7 @@ def main():
             ]		
 		
             all_posts_df = pd.DataFrame()
-	    st.session_state.all_posts_df = all_posts_df	
+            st.session_state.all_posts_df = all_posts_df	
             for subreddit in subreddits_to_search:
                 for query in queries:
                     praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit=subreddit))
