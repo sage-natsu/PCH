@@ -386,15 +386,27 @@ def main():
                 for sibling in sibling_batches
                 for phrase in expanded_sibling_phrases
             ]
-            subreddits_to_search = ["all"] + sibling_subreddits if sibling_subreddits else ["all"]  # Search globally + sibling subreddits
-            all_posts_df = asyncio.run(fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limit=50, subreddits=subreddits_to_search))
+        # Split queries into smaller batches to avoid overloading asyncio
+        batch_size = 10  # Adjust this based on performance
+        query_batches = [queries[i:i + batch_size] for i in range(0, len(queries), batch_size)]
+        
+        subreddits_to_search = ["all"] + sibling_subreddits if sibling_subreddits else ["all"]  # Search globally + sibling subreddits
 
-            if all_posts_df.empty:
-                st.warning("No posts found for the selected filters.")
-            else:
-                st.write(f"Total fetched records: {len(all_posts_df)}")
-                st.dataframe(all_posts_df)
+        all_posts_df = pd.DataFrame()  # Initialize the result dataframe
 
+        # Fetch data batch by batch
+        for batch in query_batches:
+            try:
+                batch_results = asyncio.run(fetch_all_queries_parallel(batch, start_date_utc, end_date_utc, limit=50, subreddits=subreddits_to_search))
+                all_posts_df = pd.concat([all_posts_df, batch_results], ignore_index=True)
+            except Exception as e:
+                st.error(f"Error fetching batch: {e}")
+
+        if all_posts_df.empty:
+            st.warning("No posts found for the selected filters.")
+        else:
+            st.write(f"Total fetched records: {len(all_posts_df)}")
+            st.dataframe(all_posts_df)
             # Visualizations
             if not all_posts_df.empty:
                 st.subheader("Word Cloud")
