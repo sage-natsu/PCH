@@ -152,13 +152,23 @@ async def fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limi
         user_agent=REDDIT_USER_AGENT,
     )
 
-    async def fetch_single_query(query, subreddit):
+    async def fetch_single_query(reddit, query, start_date_utc, end_date_utc, limit, subreddits):
         data = []
-        subreddit_instance = await reddit.subreddit(subreddit)
-        async for submission in subreddit_instance.search(query, limit=limit):
-            created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-            if start_date_utc <= created_date <= end_date_utc:
+	for subreddit in subreddits:    
+            subreddit_instance = await reddit.subreddit(subreddit)
+            async for submission in subreddit_instance.search(query, limit=limit):
+            try:
+                # Ensure submission is valid before accessing attributes
+                if submission is None:
+                    continue
+
+                created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+                if not (start_date_utc <= created_date <= end_date_utc):
+                    continue
+
                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+                
+                # Collect post data
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
@@ -169,29 +179,33 @@ async def fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limi
                     "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
                     "Sentiment": sentiment,
                     "Emotion": emotion,
-               }
+                }
 
-        # Add extra data only if available
-        optional_attributes = {
-            "Num_Comments": getattr(submission, "num_comments", None),
-            "Over_18": getattr(submission, "over_18", None),
-            "URL": getattr(submission, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-            "Pinned": getattr(submission, "stickied", None),
-            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-            "Gilded": getattr(submission, "gilded", None),
-            "Edited": submission.edited if submission.edited else None
-        }
+                # Optional attributes
+                optional_attributes = {
+                    "Num_Comments": getattr(submission, "num_comments", None),
+                    "Over_18": getattr(submission, "over_18", None),
+                    "URL": getattr(submission, "url", None),
+                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                    "Pinned": getattr(submission, "stickied", None),
+                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                    "Gilded": getattr(submission, "gilded", None),
+                    "Edited": submission.edited if submission.edited else None
+                }
 
-        # Add optional attributes if they are not None
-        for key, value in optional_attributes.items():
-            if value is not None:
-                post_data[key] = value
+                for key, value in optional_attributes.items():
+                    if value is not None:
+                        post_data[key] = value
+
                 data.append(post_data)
-        return pd.DataFrame(data)
+            except Exception as e:
+                # Log the exception and continue
+                print(f"Error processing submission: {e}")
+
+    return data
 
     tasks = [fetch_single_query(query, subreddit) for query in queries for subreddit in subreddits]
     results = await asyncio.gather(*tasks)
