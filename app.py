@@ -379,9 +379,9 @@ def main():
 		
             all_posts_df = pd.DataFrame()
             for subreddit in subreddits_to_search:
-            for query in queries:
-                praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit=subreddit))
-                all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+                for query in queries:
+                    praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit=subreddit))
+                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
 
             # Drop duplicates based on Post ID
             all_posts_df = all_posts_df.drop_duplicates(subset=["Post ID"])		
