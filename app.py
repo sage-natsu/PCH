@@ -21,6 +21,8 @@ import plotly.express as px
 import seaborn as sns
 import nltk
 nltk.download('wordnet')
+from termcolor import colored
+import re
 
 # Download VADER lexicon
 nltk.download('vader_lexicon')
@@ -116,6 +118,33 @@ def has_sibling_experience(post_text):
     experience_check = any(phrase in post_text for phrase in sibling_experience_phrases)
 
     return sibling_check and disability_check and experience_check
+# Highlight terms in text based on category
+def highlight_terms(text, sibling_terms, disability_terms, experience_phrases):
+    # Define color styles
+    sibling_style = "background-color: #FFD700; font-weight: bold;"  # Yellow for sibling terms
+    disability_style = "background-color: #90EE90; font-weight: bold;"  # Light green for disability terms
+    experience_style = "background-color: #87CEFA; font-weight: bold;"  # Light blue for experience phrases
+
+    # Function to wrap term with HTML span for highlighting
+    def apply_highlight(term, style):
+        return f'<span style="{style}">{term}</span>'
+
+    # Highlight sibling terms
+    for term in sibling_terms:
+        regex = re.compile(re.escape(term), re.IGNORECASE)
+        text = regex.sub(lambda match: apply_highlight(match.group(), sibling_style), text)
+
+    # Highlight disability terms
+    for term in disability_terms:
+        regex = re.compile(re.escape(term), re.IGNORECASE)
+        text = regex.sub(lambda match: apply_highlight(match.group(), disability_style), text)
+
+    # Highlight experience phrases
+    for phrase in experience_phrases:
+        regex = re.compile(re.escape(phrase), re.IGNORECASE)
+        text = regex.sub(lambda match: apply_highlight(match.group(), experience_style), text)
+
+    return text	
 
 
 # Function for sentiment and emotion analysis
@@ -408,8 +437,21 @@ def main():
                 st.session_state.all_posts = all_posts_df
                 st.write(f"Total fetched records: {len(all_posts_df)}")
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
-                st.subheader("All Posts")
-                st.dataframe(all_posts_df)
+                # Apply highlighting to Title and Body columns
+                all_posts_df["Highlighted Title"] = all_posts_df["Title"].apply(
+                    lambda x: highlight_terms(str(x), sibling_terms, disability_terms, sibling_experience_phrases)
+                )
+                all_posts_df["Highlighted Body"] = all_posts_df["Body"].apply(
+                    lambda x: highlight_terms(str(x), sibling_terms, disability_terms, sibling_experience_phrases)
+                )
+
+                # Display highlighted posts using st.markdown
+                st.subheader("Highlighted Posts")
+                for idx, row in all_posts_df.iterrows():
+                    st.markdown(f"**Post Title:** {row['Highlighted Title']}", unsafe_allow_html=True)
+                    st.markdown(f"**Post Body:** {row['Highlighted Body']}", unsafe_allow_html=True)
+                    st.markdown("---")  # Separator between posts
+
 
                 # Filter and display relevant posts
 #                relevant_posts = filter_relevant_posts(all_posts_df)
@@ -498,7 +540,17 @@ def main():
         if not comments_data.empty:
             st.success(f"Fetched {len(comments_data)} comments for Post ID: {post_id}")
             st.session_state.comments_data = comments_data  # Persist comments data
-            st.dataframe(st.session_state.comments_data)
+            # Apply highlighting to comment body
+            st.session_state.comments_data["Highlighted Body"] = st.session_state.comments_data["Body"].apply(
+                lambda x: highlight_terms(str(x), sibling_terms, disability_terms, sibling_experience_phrases)
+            )
+
+       # Display highlighted comments using st.markdown
+       st.subheader("Highlighted Comments")
+       for idx, row in st.session_state.comments_data.iterrows():
+           st.markdown(f"**Comment:** {row['Highlighted Body']}", unsafe_allow_html=True)
+           st.markdown("---")  # Separator between comments
+
 
 
        
