@@ -157,33 +157,33 @@ async def fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limi
         for subreddit in subreddits:    
             subreddit_instance = await reddit.subreddit(subreddit)
             async for submission in subreddit_instance.search(query, limit=limit):
-            try:    
+                      try:    
             
-                # Ensure submission is valid before accessing attributes
-                if submission is None:
-                    continue
+                      # Ensure submission is valid before accessing attributes
+                      if submission is None:
+                      continue
 
-                created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-                if not (start_date_utc <= created_date <= end_date_utc):
-                    continue
+                      created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+                      if not (start_date_utc <= created_date <= end_date_utc):
+                      continue
 
-                sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+                     sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
                 
-                # Collect post data
-                post_data = {
-                    "Post ID": submission.id,
-                    "Title": submission.title,
-                    "Body": submission.selftext,
-                    "Upvotes": submission.score,
-                    "Subreddit": submission.subreddit.display_name,
-                    "Author": str(submission.author),
-                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Sentiment": sentiment,
-                    "Emotion": emotion,
-                }
+                     # Collect post data
+                     post_data = {
+                         "Post ID": submission.id,
+                         "Title": submission.title,
+                         "Body": submission.selftext,
+                         "Upvotes": submission.score,
+                         "Subreddit": submission.subreddit.display_name,
+                         "Author": str(submission.author),
+                         "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                         "Sentiment": sentiment,
+                         "Emotion": emotion,
+                     }
 
-                # Optional attributes
-                optional_attributes = {
+                     # Optional attributes
+                     optional_attributes = {
                     "Num_Comments": getattr(submission, "num_comments", None),
                     "Over_18": getattr(submission, "over_18", None),
                     "URL": getattr(submission, "url", None),
