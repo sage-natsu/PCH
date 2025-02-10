@@ -114,6 +114,7 @@ async def discover_sibling_related_subreddits():
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
+    sibling_keywords = ["siblingsupport", "glasschildren", "specialneedsiblings"]	
     sibling_related_subreddits = set()
     keywords = ["siblingsupport", "glasschildren", "specialneedsiblings"]
 
@@ -359,7 +360,7 @@ def main():
 
     disability_batches = group_terms(selected_disabilities)
     sibling_batches = group_terms(selected_siblings)
-
+    sibling_subreddits = []  # Initialize empty
     if st.sidebar.button("Discover Sibling Subreddits"):
         sibling_subreddits = asyncio.run(discover_sibling_related_subreddits())
         st.write(f"Discovered sibling-related subreddits: {', '.join(sibling_subreddits)}")
@@ -372,7 +373,7 @@ def main():
                 for sibling in sibling_batches
                 for phrase in expanded_sibling_phrases
             ]
-            subreddits_to_search = ["all"] + sibling_subreddits  # Search globally + sibling subreddits
+            subreddits_to_search = ["all"] + sibling_subreddits if sibling_subreddits else ["all"]  # Search globally + sibling subreddits
             all_posts_df = asyncio.run(fetch_all_queries_parallel(queries, start_date_utc, end_date_utc, limit=50, subreddits=subreddits_to_search))
 
             if all_posts_df.empty:
