@@ -183,8 +183,8 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         sentiment, emotion = analyze_sentiment_and_emotion(post_text)
         comments_df = await fetch_comments(submission.id)
         
-        sentiment_summary = comments_data['Sentiment'].value_counts().to_dict()
-        emotion_summary = comments_data['Emotion'].value_counts().to_dict()
+        sentiment_summary = comments_df['Sentiment'].value_counts().to_dict()
+        emotion_summary = comments_df['Emotion'].value_counts().to_dict()
         
         sentiment_summary_str = ", ".join(f"{count} {sentiment}" for sentiment, count in sentiment_summary.items())
         emotion_summary_str = ", ".join(f"{count} {emotion}" for emotion, count in emotion_summary.items())
