@@ -128,22 +128,14 @@ def highlight_terms(text, sibling_terms, disability_terms, experience_phrases):
     # Function to wrap term with HTML span for highlighting
     def apply_highlight(term, style):
         return f'<span style="{style}">{term}</span>'
+	    
+    all_terms = [(term, sibling_style) for term in sibling_terms] + \
+                [(term, disability_style) for term in disability_terms] + \
+                [(phrase, experience_style) for phrase in experience_phrases]
 
-    # Highlight sibling terms
-    for term in sibling_terms:
-        regex = re.compile(re.escape(term), re.IGNORECASE)
-        text = regex.sub(lambda match: apply_highlight(match.group(), sibling_style), text)
-
-    # Highlight disability terms
-    for term in disability_terms:
-        regex = re.compile(re.escape(term), re.IGNORECASE)
-        text = regex.sub(lambda match: apply_highlight(match.group(), disability_style), text)
-
-    # Highlight experience phrases
-    for phrase in experience_phrases:
-        regex = re.compile(re.escape(phrase), re.IGNORECASE)
-        text = regex.sub(lambda match: apply_highlight(match.group(), experience_style), text)
-
+    for term, style in all_terms:
+        regex = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+        text = regex.sub(lambda match: apply_highlight(match.group(), style), text)
     return text	
 
 
@@ -189,17 +181,30 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
 	    
 		
         sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+        comments_df = await fetch_comments(submission.id)
+        
+        sentiment_summary = comments_df['Sentiment'].value_counts().to_dict()
+        emotion_summary = comments_df['Emotion'].value_counts().to_dict()
+        
+        sentiment_summary_str = ", ".join(f"{count} {sentiment}" for sentiment, count in sentiment_summary.items())
+        emotion_summary_str = ", ".join(f"{count} {emotion}" for emotion, count in emotion_summary.items())
+
+        highlighted_title = highlight_terms(submission.title, sibling_terms, disability_terms, sibling_experience_phrases)
+        highlighted_body = highlight_terms(submission.selftext, sibling_terms, disability_terms, sibling_experience_phrases)
+	    
         # Prepare the post data
         post_data = {
             "Post ID": submission.id,
             "Title": submission.title,
+            "Highlighted Title": highlighted_title,
             "Body": submission.selftext,
+            "Highlighted Body": highlighted_body,
             "Upvotes": submission.score,
             "Subreddit": submission.subreddit.display_name,
             "Author": str(submission.author),
             "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "Sentiment": sentiment,
-            "Emotion": emotion,
+            "Comments Sentiment Summary": sentiment_summary_str,
+            "Comments Emotion Summary": emotion_summary_str
         }
 
         # Add extra data only if available
@@ -434,24 +439,23 @@ def main():
                 st.warning("No posts found for the selected filters.")
             else:
                 # Save and display all posts
-                st.session_state.all_posts = all_posts_df
+                st.session_state.all_posts_df = all_posts_df
                 st.write(f"Total fetched records: {len(all_posts_df)}")
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
-                # Apply highlighting to Title and Body columns
-                all_posts_df["Highlighted Title"] = all_posts_df["Title"].apply(
-                    lambda x: highlight_terms(str(x), sibling_terms, disability_terms, sibling_experience_phrases)
-                )
-                all_posts_df["Highlighted Body"] = all_posts_df["Body"].apply(
-                    lambda x: highlight_terms(str(x), sibling_terms, disability_terms, sibling_experience_phrases)
-                )
 
-                # Display highlighted posts using st.markdown
                 st.subheader("Highlighted Posts")
                 for idx, row in all_posts_df.iterrows():
                     st.markdown(f"**Post Title:** {row['Highlighted Title']}", unsafe_allow_html=True)
                     st.markdown(f"**Post Body:** {row['Highlighted Body']}", unsafe_allow_html=True)
                     st.markdown("---")  # Separator between posts
-
+			
+                # **CSV Download**
+                st.sidebar.download_button(
+                    "Download Posts with Highlights and Summaries",
+                    all_posts_df.to_csv(index=False),
+                    file_name="highlighted_posts_with_summaries.csv",
+                    key="download_all_posts"
+                )
 
                 # Filter and display relevant posts
 #                relevant_posts = filter_relevant_posts(all_posts_df)
@@ -478,7 +482,7 @@ def main():
 
                 # Heatmap of Sentiment vs Emotion
                 st.subheader("Heatmap of Sentiment vs Emotion")
-                generate_heatmap(st.session_state.post_data)
+                generate_heatmap(st.session_state.all_posts_df)
 
                 # 1. Sentiment and Emotion Distribution by Topic
                 st.subheader("Sentiment and Emotion Distribution by Topic")
@@ -515,19 +519,6 @@ def main():
                     plot_emotion_radar(st.session_state.all_posts)
 
 
-
-
-                
-
- 
-    # Download All Posts
-    if not st.session_state.all_posts_df.empty:
-        st.sidebar.download_button(
-            "Download All Posts",
-            st.session_state.all_posts_df.to_csv(index=False),
-            file_name="all_posts_df.csv",
-            key="download_all_posts"  # Unique key for all posts
-        )
 
     # Fetch comments and summaries
     st.subheader("Enter Post ID for Comments and Summarization Analysis")
