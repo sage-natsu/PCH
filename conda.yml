@@ -28,3 +28,4 @@ dependencies:
       - fpdf                # PDF generation
       - asyncpraw           # Reddit API
       - onnxscript
+      - termcolor
