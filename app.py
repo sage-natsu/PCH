@@ -449,11 +449,15 @@ def main():
                 st.write(f"Total fetched records: {len(all_posts_df)}")
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
 
-                st.subheader("Highlighted Posts")
-                for idx, row in all_posts_df.iterrows():
-                    st.markdown(f"**Post Title:** {row['Highlighted Title']}", unsafe_allow_html=True)
-                    st.markdown(f"**Post Body:** {row['Highlighted Body']}", unsafe_allow_html=True)
-                    st.markdown("---")  # Separator between posts
+                st.subheader("Highlighted Posts Table")
+
+
+                # Convert DataFrame to HTML and set escape=False to allow HTML rendering
+                styled_table = all_posts_df.to_html(escape=False, index=False)
+
+                # Display the styled table using st.write
+                st.write(styled_table, unsafe_allow_html=True)
+
 			
                 # **CSV Download**
                 st.sidebar.download_button(
