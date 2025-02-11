@@ -183,14 +183,20 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         sentiment, emotion = analyze_sentiment_and_emotion(post_text)
         comments_df = await fetch_comments(submission.id)
         
-        sentiment_summary = comments_df['Sentiment'].value_counts().to_dict()
-        emotion_summary = comments_df['Emotion'].value_counts().to_dict()
-        
+        # Ensure comments_df has the necessary columns before processing
+        if not comments_df.empty and 'Sentiment' in comments_df.columns and 'Emotion' in comments_df.columns:
+            sentiment_summary = comments_df['Sentiment'].value_counts().to_dict()
+            emotion_summary = comments_df['Emotion'].value_counts().to_dict()
+        else:
+            sentiment_summary = {}
+            emotion_summary = {}
+
         sentiment_summary_str = ", ".join(f"{count} {sentiment}" for sentiment, count in sentiment_summary.items())
         emotion_summary_str = ", ".join(f"{count} {emotion}" for emotion, count in emotion_summary.items())
 
         highlighted_title = highlight_terms(submission.title, sibling_terms, disability_terms, sibling_experience_phrases)
         highlighted_body = highlight_terms(submission.selftext, sibling_terms, disability_terms, sibling_experience_phrases)
+
 	    
         # Prepare the post data
         post_data = {
