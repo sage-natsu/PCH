@@ -17,3 +17,4 @@ nltk
 scikit-learn
 fpdf
 torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+termcolor
