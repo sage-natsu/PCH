@@ -31,7 +31,10 @@ from nltk.corpus import wordnet
 
 # Enable nested event loop for Streamlit
 nest_asyncio.apply()
+import aiohttp  # Use aiohttp for session reuse
 
+# Create a global Reddit instance to avoid re-authenticating repeatedly
+session = aiohttp.ClientSession()
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
@@ -167,9 +170,12 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
+	requestor_kwargs={"session": session},  # Use the shared session    
     )
     data = []
     subreddit_instance = await reddit.subreddit(subreddit)
+    try:
+    	
     async for submission in subreddit_instance.search(query, limit=limit):
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
@@ -179,8 +185,11 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         if not has_sibling_experience(post_text):
             continue  # Skip post if it doesn't meet the criteria
 	    
-		
-        sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+	post_id = submission.id	
+        if any(post["Post ID"] == post_id for post in data):
+            continue
+        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+       
         comments_df = await fetch_comments(submission.id)
         
         # Ensure comments_df has the necessary columns before processing
@@ -234,7 +243,12 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
                 post_data[key] = value
 
         data.append(post_data)
+        await asyncio.sleep(2)
 
+    except asyncprawcore.exceptions.TooManyRequests:
+        print("Hit rate limit. Sleeping for 60 seconds...")
+        await asyncio.sleep(60)  # Wait for Reddit API to reset limit
+        return await fetch_praw_data(query, start_date_utc, end_date_utc, limit, subreddit)	
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
