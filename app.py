@@ -21,8 +21,6 @@ import plotly.express as px
 import seaborn as sns
 import nltk
 nltk.download('wordnet')
-from termcolor import colored
-import re
 
 # Download VADER lexicon
 nltk.download('vader_lexicon')
@@ -31,10 +29,7 @@ from nltk.corpus import wordnet
 
 # Enable nested event loop for Streamlit
 nest_asyncio.apply()
-import aiohttp  # Use aiohttp for session reuse
 
-# Create a global Reddit instance to avoid re-authenticating repeatedly
-session = aiohttp.ClientSession()
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
@@ -71,76 +66,6 @@ struggle_keywords = [
     "balance", "pressure", "burnout", "neglect"
 ]
 
-sibling_experience_phrases = [
-    "I have a brother", "I have a sister", "I have siblings", "my twin", "my bro", "my sis", 
-    "my siblings", "my younger sibling", "my older sibling", "growing up with my sibling",
-    "responsibility for my sibling", "helping my sibling", "caring for my brother", 
-    "caring for my sister", "my brother cares", "my sister cares", 
-    "my sibling needs support", "my sibling has a disability", 
-    "living with a sibling with autism", "supporting my disabled sibling",
-    "growing up with a disabled sibling", "my sibling struggles", 
-    "my sibling needs help", "balancing my life and sibling responsibilities", 
-    "mental stress from sibling care", "how my sibling affects my life",
-    "my brother with autism", "my sister with Down syndrome", 
-    "challenges with my sibling", "my sibling’s disability", "coping with sibling issues", 
-    "how my sibling impacts me", "supporting my younger brother", 
-    "helping my autistic sibling", "my sibling depends on me", 
-    "being a twin and sharing responsibilities", "sharing a home with my brother", 
-    "my sister is my best friend", "sibling emotional support", "guilt about my sibling", 
-    "the pressure of sibling care", "overlooked because of my sibling", 
-    "my brother’s challenges", "my sister’s struggles", 
-    "autistic sibling experiences", "balancing school and sibling care", 
-    "protecting my younger brother", "protecting my sister",
-    "I feel isolated due to sibling care", "burnout from supporting my sibling",
-    "my sibling relationship is complicated", "my sibling’s behavior affects me", 
-    "coping with sibling-related stress", "dealing with my sibling’s meltdowns", 
-    "my sibling’s special needs", "I’m responsible for my sibling", 
-    "handling sibling emotions", "my sibling’s impact on my family", 
-    "navigating life with a sibling with special needs", "how my sibling shaped my childhood",
-    "my role in my sibling’s life", "managing my sibling’s issues",
-    "my sibling’s developmental delay", "teaching my sibling basic skills",
-    "we share everything as siblings", "my disabled brother", 
-    "my disabled sister", "siblings of kids with disabilities", 
-    "siblings of neurodivergent kids", "being the sibling of a special needs child", 
-    "my life revolves around my sibling’s care", "siblings of children with learning disabilities", 
-    "how I manage life with a sibling who has ADHD", 
-    "parentification because of my sibling", "being a carer for my sibling", 
-    "helping my sibling with their homework", "we share a room as siblings",
-    "being there for my brother", "helping my sibling adjust to school", 
-    "coping with my sibling’s disability", "managing sibling stress",
-    "I’m the older sibling of a disabled child", "being the younger sibling of someone with autism"
-]
-def has_sibling_experience(post_text):
-    post_text = post_text.lower()
-
-    # Check for any sibling term and any disability term
-    sibling_check = any(sibling.lower() in post_text for sibling in sibling_terms)
-    disability_check = any(disability.lower() in post_text for disability in disability_terms)
-
-    # Check for sibling-specific experience phrases
-    experience_check = any(phrase in post_text for phrase in sibling_experience_phrases)
-
-    return sibling_check and disability_check and experience_check
-# Highlight terms in text based on category
-def highlight_terms(text, sibling_terms, disability_terms, experience_phrases):
-    # Define color styles
-    sibling_style = "background-color: #FFD700; font-weight: bold;"  # Yellow for sibling terms
-    disability_style = "background-color: #90EE90; font-weight: bold;"  # Light green for disability terms
-    experience_style = "background-color: #87CEFA; font-weight: bold;"  # Light blue for experience phrases
-
-    # Function to wrap term with HTML span for highlighting
-    def apply_highlight(term, style):
-        return f'<span style="{style}">{term}</span>'
-	    
-    all_terms = [(term, sibling_style) for term in sibling_terms] + \
-                [(term, disability_style) for term in disability_terms] + \
-                [(phrase, experience_style) for phrase in experience_phrases]
-
-    for term, style in all_terms:
-        regex = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
-        text = regex.sub(lambda match: apply_highlight(match.group(), style), text)
-    return text	
-
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -170,56 +95,25 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
-	requestor_kwargs={"session": session},  # Use the shared session    
     )
     data = []
     subreddit_instance = await reddit.subreddit(subreddit)
-    try:
-    	
     async for submission in subreddit_instance.search(query, limit=limit):
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
-        post_text = (submission.title + " " + submission.selftext).lower()
-        # **Check for proper sibling experience context**
-        if not has_sibling_experience(post_text):
-            continue  # Skip post if it doesn't meet the criteria
-	    
-	post_id = submission.id	
-        if any(post["Post ID"] == post_id for post in data):
-            continue
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-       
-        comments_df = await fetch_comments(submission.id)
-        
-        # Ensure comments_df has the necessary columns before processing
-        if not comments_df.empty and 'Sentiment' in comments_df.columns and 'Emotion' in comments_df.columns:
-            sentiment_summary = comments_df['Sentiment'].value_counts().to_dict()
-            emotion_summary = comments_df['Emotion'].value_counts().to_dict()
-        else:
-            sentiment_summary = {}
-            emotion_summary = {}
-
-        sentiment_summary_str = ", ".join(f"{count} {sentiment}" for sentiment, count in sentiment_summary.items())
-        emotion_summary_str = ", ".join(f"{count} {emotion}" for emotion, count in emotion_summary.items())
-
-        highlighted_title = highlight_terms(submission.title, sibling_terms, disability_terms, sibling_experience_phrases)
-        highlighted_body = highlight_terms(submission.selftext, sibling_terms, disability_terms, sibling_experience_phrases)
-
-	    
         # Prepare the post data
         post_data = {
             "Post ID": submission.id,
             "Title": submission.title,
-            "Highlighted Title": highlighted_title,
             "Body": submission.selftext,
-            "Highlighted Body": highlighted_body,
             "Upvotes": submission.score,
             "Subreddit": submission.subreddit.display_name,
             "Author": str(submission.author),
             "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "Comments Sentiment Summary": sentiment_summary_str,
-            "Comments Emotion Summary": emotion_summary_str
+            "Sentiment": sentiment,
+            "Emotion": emotion,
         }
 
         # Add extra data only if available
@@ -243,12 +137,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
                 post_data[key] = value
 
         data.append(post_data)
-        await asyncio.sleep(2)
 
-    except asyncprawcore.exceptions.TooManyRequests:
-        print("Hit rate limit. Sleeping for 60 seconds...")
-        await asyncio.sleep(60)  # Wait for Reddit API to reset limit
-        return await fetch_praw_data(query, start_date_utc, end_date_utc, limit, subreddit)	
     # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
@@ -384,13 +273,7 @@ def main():
     selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
     selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
     start_date = st.sidebar.date_input("Start Date")
-    end_date = st.sidebar.date_input("End Date") 
-	
-    # Initialize session states to avoid AttributeError
-    if "all_posts_df" not in st.session_state:
-        st.session_state.all_posts_df = pd.DataFrame()
-
-	
+    end_date = st.sidebar.date_input("End Date")
 
     # Subreddit filter
     subreddit_filter = st.sidebar.text_input("Subreddit (default: all)", value="all").strip()	
@@ -429,24 +312,12 @@ def main():
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	
-            # Prioritize sibling-specific subreddits, then search globally
-            subreddits_to_search = ["SiblingSupport", "GlassChildren", "DisabledSiblings", subreddit_filter]
-            queries = [
-                f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
-                for disability in disability_batches
-                for sibling in sibling_batches
-            ]		
-		
             all_posts_df = pd.DataFrame()
-            st.session_state.all_posts_df = all_posts_df	
-            for subreddit in subreddits_to_search:
-                for query in queries:
-                    praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit=subreddit))
+            for disability in disability_batches:
+                for sibling in sibling_batches:
+                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
+                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
                     all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
-
-            # Drop duplicates based on Post ID
-            all_posts_df = all_posts_df.drop_duplicates(subset=["Post ID"])		
-            
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
@@ -459,27 +330,11 @@ def main():
                 st.warning("No posts found for the selected filters.")
             else:
                 # Save and display all posts
-                st.session_state.all_posts_df = all_posts_df
+                st.session_state.all_posts = all_posts_df
                 st.write(f"Total fetched records: {len(all_posts_df)}")
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
-
-                st.subheader("Highlighted Posts Table")
-
-
-                # Convert DataFrame to HTML and set escape=False to allow HTML rendering
-                styled_table = all_posts_df.to_html(escape=False, index=False)
-
-                # Display the styled table using st.write
-                st.write(styled_table, unsafe_allow_html=True)
-
-			
-                # **CSV Download**
-                st.sidebar.download_button(
-                    "Download Posts with Highlights and Summaries",
-                    all_posts_df.to_csv(index=False),
-                    file_name="highlighted_posts_with_summaries.csv",
-                    key="download_all_posts"
-                )
+                st.subheader("All Posts")
+                st.dataframe(all_posts_df)
 
                 # Filter and display relevant posts
 #                relevant_posts = filter_relevant_posts(all_posts_df)
@@ -506,7 +361,7 @@ def main():
 
                 # Heatmap of Sentiment vs Emotion
                 st.subheader("Heatmap of Sentiment vs Emotion")
-                generate_heatmap(st.session_state.all_posts_df)
+                generate_heatmap(st.session_state.post_data)
 
                 # 1. Sentiment and Emotion Distribution by Topic
                 st.subheader("Sentiment and Emotion Distribution by Topic")
@@ -544,6 +399,27 @@ def main():
 
 
 
+
+                
+
+    # Download buttons
+    # Download Relevant Posts
+    if not st.session_state.post_data.empty:
+        st.sidebar.download_button(
+            "Download Relevant Posts",
+            st.session_state.post_data.to_csv(index=False),
+            file_name="relevant_posts.csv",
+            key="download_relevant_posts"  # Unique key for relevant posts
+        )
+    # Download All Posts
+    if not st.session_state.all_posts.empty:
+        st.sidebar.download_button(
+            "Download All Posts",
+            st.session_state.all_posts.to_csv(index=False),
+            file_name="all_posts.csv",
+            key="download_all_posts"  # Unique key for all posts
+        )
+
     # Fetch comments and summaries
     st.subheader("Enter Post ID for Comments and Summarization Analysis")
     post_id = st.text_input("Post ID")
@@ -555,17 +431,7 @@ def main():
         if not comments_data.empty:
             st.success(f"Fetched {len(comments_data)} comments for Post ID: {post_id}")
             st.session_state.comments_data = comments_data  # Persist comments data
-            # Apply highlighting to comment body
-            st.session_state.comments_data["Highlighted Body"] = st.session_state.comments_data["Body"].apply(
-                lambda x: highlight_terms(str(x), sibling_terms, disability_terms, sibling_experience_phrases)
-        )
-
-        # Display highlighted comments using st.markdown
-        st.subheader("Highlighted Comments")
-        for idx, row in st.session_state.comments_data.iterrows():
-            st.markdown(f"**Comment:** {row['Highlighted Body']}", unsafe_allow_html=True)
-            st.markdown("---")  # Separator between comments
-
+            st.dataframe(st.session_state.comments_data)
 
 
        
