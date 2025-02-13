@@ -19,6 +19,12 @@ from wordcloud import WordCloud
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.express as px
 import seaborn as sns
+import torch
+from transformers import pipeline
+
+
+# Disable parallelism warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 import nltk
 nltk.download('wordnet')
 
@@ -30,9 +36,16 @@ from nltk.corpus import wordnet
 # Enable nested event loop for Streamlit
 nest_asyncio.apply()
 
+# Download necessary NLTK data
+nltk.download('wordnet')
+nltk.download('vader_lexicon')
+
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
+# Initialize Zero-Shot Learning (ZSL) Model
+device = "cuda" if torch.cuda.is_available() else "cpu"
+zsl_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=0 if torch.cuda.is_available() else -1)
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
@@ -56,6 +69,21 @@ disability_terms = [
 
 sibling_terms = [
     "Brother","Brothers", "Brother’s", "Sister", "Sisters", "Sister’s","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
+]
+
+# Generate Dynamic Query Combinations
+query_list = [f'"{d} {s}"' for d in disability_terms for s in sibling_terms]
+query = " OR ".join(query_list)
+
+# ZSL Labels (Categories for Filtering)
+zsl_labels = [
+    "Growing up with a disabled sibling",
+    "Supporting a disabled sibling",
+    "Challenges of having a neurodivergent sibling",
+    "Positive experiences with a sibling with disabilities",
+    "Struggles of being a sibling to a special needs child",
+    "Caring for a sibling with autism or Down syndrome",
+    "Emotional impact of sibling disability"
 ]
 
 # Additional keywords for struggles
@@ -89,21 +117,36 @@ def analyze_sentiment_and_emotion(text):
     )
     return sentiment, emotion
 
-# Async function to fetch posts using PRAW
-async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddit="all"):
+# Zero-Shot Learning Function to Filter Relevant Posts
+def is_sibling_experience(text):
+    result = zsl_classifier(text, zsl_labels, multi_label=True)
+    return any(score > 0.35 for score in result["scores"])  # Keep only posts with strong relevance
+
+# Async Function to Fetch Posts Using PRAW
+async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
-        user_agent=REDDIT_USER_AGENT,
+        user_agent=REDDIT_USER_AGENT
     )
     data = []
+    seen_post_ids = set()  # Prevent duplicates
     subreddit_instance = await reddit.subreddit(subreddit)
     async for submission in subreddit_instance.search(query, limit=limit):
+        if submission.id in seen_post_ids:
+            continue  # Skip duplicate posts
+        seen_post_ids.add(submission.id)
+
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
-        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-        # Prepare the post data
+
+        post_text = f"{submission.title} {submission.selftext}"
+        if not is_sibling_experience(post_text):  # Apply ZSL filter
+            continue
+
+        sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+
         post_data = {
             "Post ID": submission.id,
             "Title": submission.title,
@@ -287,10 +330,8 @@ def main():
 	
     if start_date > end_date:
         st.error("Start Date must be before End Date!")
-        
-     
-	
-    # Convert selected dates to UTC
+        return
+
     start_date_utc = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
     end_date_utc = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
@@ -310,34 +351,17 @@ def main():
     all_posts_df = pd.DataFrame()
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
-        with st.spinner("Fetching data... Please wait."):
-            start_time = time.time()  # Start the timer	
-            all_posts_df = pd.DataFrame()
-            for disability in disability_batches:
-                for sibling in sibling_batches:
-                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
-                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
-                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
-            end_time = time.time()  # End the timer
-            elapsed_time = end_time - start_time  # Calculate the elapsed time	
-            if exclusion_words:
-                all_posts_df = all_posts_df[
-                    ~all_posts_df["Title"].str.lower().str.contains("|".join(exclusion_words), na=False)
-                    & ~all_posts_df["Body"].str.lower().str.contains("|".join(exclusion_words), na=False)
-                ]
+        with st.spinner("Fetching and Classifying Posts..."):
+            praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter))
 
-            if all_posts_df.empty:
-                st.warning("No posts found for the selected filters.")
+            if praw_df.empty:
+                st.warning("No relevant sibling experience posts found.")
             else:
-                # Save and display all posts
-                st.session_state.all_posts = all_posts_df
-                st.write(f"Total fetched records: {len(all_posts_df)}")
-                st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
-                st.subheader("All Posts")
-                st.dataframe(all_posts_df)
+                st.success(f"Fetched {len(praw_df)} posts related to sibling experiences.")
+                st.dataframe(praw_df)
 
                 # Filter and display relevant posts
-#                relevant_posts = filter_relevant_posts(all_posts_df)
+#                relevant_posts = filter_relevant_posts(praw_df)
 #                st.session_state.post_data = relevant_posts
 #                st.write(f"Total relevant records: {len(relevant_posts)}")
 #                st.subheader("Relevant Posts")
@@ -345,7 +369,7 @@ def main():
 
                 # Top 5 Subreddits
                 st.subheader("Top 5 Popular Subreddits")
-                top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
+                top_subreddits = praw_df["Subreddit"].value_counts().head(5)
                 st.bar_chart(top_subreddits)
 
                 # Word Cloud
@@ -355,9 +379,9 @@ def main():
 
                 # Post Highlights
                 st.subheader("Post Highlights")
-                st.write("**Most Upvoted Post:**", all_posts_df.loc[all_posts_df["Upvotes"].idxmax()])
-                st.write("**Latest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmax()])
-                st.write("**Oldest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmin()])
+                st.write("**Most Upvoted Post:**", praw_df.loc[all_posts_df["Upvotes"].idxmax()])
+                st.write("**Latest Post:**", praw_df.loc[all_posts_df["Created_UTC"].idxmax()])
+                st.write("**Oldest Post:**", praw_df.loc[all_posts_df["Created_UTC"].idxmin()])
 
                 # Heatmap of Sentiment vs Emotion
                 st.subheader("Heatmap of Sentiment vs Emotion")
@@ -366,15 +390,15 @@ def main():
                 # 1. Sentiment and Emotion Distribution by Topic
                 st.subheader("Sentiment and Emotion Distribution by Topic")
                 if not all_posts_df.empty:
-                    sentiment_emotion_dist = all_posts_df.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
+                    sentiment_emotion_dist = praw_df.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
                     fig = px.bar(sentiment_emotion_dist, x="Sentiment", y="Count", color="Emotion", title="Sentiment and Emotion Distribution by Topic")
                     st.plotly_chart(fig, use_container_width=True)
 
                 # 2. Struggles Word Cloud for Siblings
-                if not st.session_state.post_data.empty:
+                if not st.session_state.praw_df.empty:
                     st.subheader("Struggles Word Cloud")
                     relevant_text = " ".join(
-                        st.session_state.post_data["Body"].dropna().tolist()
+                        st.session_state.praw_df["Body"].dropna().tolist()
                     )
                     struggle_words_only = " ".join([word for word in relevant_text.split() if word.lower() in struggle_keywords])
                     create_wordcloud(struggle_words_only, "Struggles Word Cloud")
@@ -390,11 +414,11 @@ def main():
            
            
                 st.subheader("Sentiment Distribution by Subreddit")       
-                if not st.session_state.all_posts.empty:
+                if not st.session_state.praw_df.empty:
                     plot_sentiment_by_subreddit(st.session_state.all_posts)
                    
                 st.subheader("Emotion Radar Chart")               
-                if not st.session_state.all_posts.empty:
+                if not st.session_state.praw_df.empty:
                     plot_emotion_radar(st.session_state.all_posts)
 
 
@@ -412,10 +436,10 @@ def main():
             key="download_relevant_posts"  # Unique key for relevant posts
         )
     # Download All Posts
-    if not st.session_state.all_posts.empty:
+    if not st.session_state.praw_df.empty:
         st.sidebar.download_button(
             "Download All Posts",
-            st.session_state.all_posts.to_csv(index=False),
+            st.session_state.praw_df.to_csv(index=False),
             file_name="all_posts.csv",
             key="download_all_posts"  # Unique key for all posts
         )
