@@ -162,7 +162,7 @@ for batch in query_batches:
                 "Author": str(submission.author),
                 "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
                 "Sentiment": sentiment,
-                    "Emotion": emotion,
+                "Emotion": emotion,
             }
 
             # Add extra data only if available
@@ -186,7 +186,7 @@ for batch in query_batches:
                     post_data[key] = value
 
             data.append(post_data)
-       await asyncio.sleep(1)  # 🔹 Avoid rate limits
+        await asyncio.sleep(1)  # 🔹 Avoid rate limits
       # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
