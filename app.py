@@ -366,7 +366,7 @@ def main():
                 st.warning("No relevant sibling experience posts found.")
             else:
                 st.success(f"Fetched {len(praw_df)} posts related to sibling experiences.")
-		st.session_state.praw_df = praw_df  # 🔹 Store in session state    
+                st.session_state.praw_df = praw_df  # 🔹 Store in session state    
                 st.dataframe(praw_df)
 
                 # Filter and display relevant posts
