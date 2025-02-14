@@ -72,8 +72,13 @@ sibling_terms = [
 ]
 
 # Generate Dynamic Query Combinations
-query_list = [f'"{d} {s}"' for d in disability_terms for s in sibling_terms]
-query = " OR ".join(query_list)
+# Break Query into Smaller Batches**
+def generate_queries(disability_terms, sibling_terms, batch_size=3):
+    """Generates query batches to prevent URITooLong errors."""
+    queries = [f'"{d} {s}"' for d in disability_terms for s in sibling_terms]
+    return [queries[i:i + batch_size] for i in range(0, len(queries), batch_size)]
+
+query_batches = generate_queries(disability_terms, sibling_terms, batch_size=5)
 
 # ZSL Labels (Categories for Filtering)
 zsl_labels = [
@@ -132,56 +137,57 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subredd
     data = []
     seen_post_ids = set()  # Prevent duplicates
     subreddit_instance = await reddit.subreddit(subreddit)
-    async for submission in subreddit_instance.search(query, limit=limit):
-        if submission.id in seen_post_ids:
-            continue  # Skip duplicate posts
-        seen_post_ids.add(submission.id)
+for batch in query_batches:
+        query = " OR ".join(batch)  # Use smaller queries
+        async for submission in subreddit_instance.search(query, limit=limit):
+            if submission.id in seen_post_ids:
+                continue  # Skip duplicates
+            seen_post_ids.add(submission.id)
 
-        created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-        if not (start_date_utc <= created_date <= end_date_utc):
-            continue
+            created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+            if not (start_date_utc <= created_date <= end_date_utc):
+                continue
 
-        post_text = f"{submission.title} {submission.selftext}"
-        if not is_sibling_experience(post_text):  # Apply ZSL filter
-            continue
+            post_text = f"{submission.title} {submission.selftext}"
+            if not is_sibling_experience(post_text):  # Apply ZSL filter
+                continue
 
-        sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+            sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+            post_data = {
+                "Post ID": submission.id,
+                "Title": submission.title,
+                "Body": submission.selftext,
+                "Upvotes": submission.score,
+                "Subreddit": submission.subreddit.display_name,
+                "Author": str(submission.author),
+                "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                "Sentiment": sentiment,
+                    "Emotion": emotion,
+            }
 
-        post_data = {
-            "Post ID": submission.id,
-            "Title": submission.title,
-            "Body": submission.selftext,
-            "Upvotes": submission.score,
-            "Subreddit": submission.subreddit.display_name,
-            "Author": str(submission.author),
-            "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "Sentiment": sentiment,
-            "Emotion": emotion,
-        }
+            # Add extra data only if available
+            optional_attributes = {
+                "Num_Comments": getattr(submission, "num_comments", None),
+                "Over_18": getattr(submission, "over_18", None),
+                "URL": getattr(submission, "url", None),
+                "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                "Pinned": getattr(submission, "stickied", None),
+                "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                "Gilded": getattr(submission, "gilded", None),
+                "Edited": submission.edited if submission.edited else None
+                                                      }
 
-        # Add extra data only if available
-        optional_attributes = {
-            "Num_Comments": getattr(submission, "num_comments", None),
-            "Over_18": getattr(submission, "over_18", None),
-            "URL": getattr(submission, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-            "Pinned": getattr(submission, "stickied", None),
-            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-            "Gilded": getattr(submission, "gilded", None),
-            "Edited": submission.edited if submission.edited else None
-        }
+            # Add optional attributes if they are not None
+            for key, value in optional_attributes.items():
+                if value is not None:
+                    post_data[key] = value
 
-        # Add optional attributes if they are not None
-        for key, value in optional_attributes.items():
-            if value is not None:
-                post_data[key] = value
-
-        data.append(post_data)
-
-    # Ensure this return statement is aligned properly within the function
+            data.append(post_data)
+       await asyncio.sleep(1)  # 🔹 Avoid rate limits
+      # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
 def group_terms(terms, group_size=3):
@@ -360,7 +366,8 @@ def main():
                 st.warning("No relevant sibling experience posts found.")
             else:
                 st.success(f"Fetched {len(praw_df)} posts related to sibling experiences.")
-                st.dataframe(st.session_state.praw_df)
+		st.session_state.praw_df = praw_df  # 🔹 Store in session state    
+                st.dataframe(praw_df)
 
                 # Filter and display relevant posts
 #                relevant_posts = filter_relevant_posts(praw_df)
