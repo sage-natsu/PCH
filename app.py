@@ -188,7 +188,7 @@ for batch in query_batches:
             data.append(post_data)
         await asyncio.sleep(1)  # 🔹 Avoid rate limits
       # Ensure this return statement is aligned properly within the function
-    return pd.DataFrame(data)
+return pd.DataFrame(data)
     
 def group_terms(terms, group_size=3):
    
