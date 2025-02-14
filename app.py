@@ -137,7 +137,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subredd
     data = []
     seen_post_ids = set()  # Prevent duplicates
     subreddit_instance = await reddit.subreddit(subreddit)
-for batch in query_batches:
+    for batch in query_batches:
         query = " OR ".join(batch)  # Use smaller queries
         async for submission in subreddit_instance.search(query, limit=limit):
             if submission.id in seen_post_ids:
