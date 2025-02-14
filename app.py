@@ -341,7 +341,9 @@ def main():
     disability_batches = group_terms(selected_disabilities)
     sibling_batches = group_terms(selected_siblings)	
 
-    # Initialize session states
+    # Ensure session state variables are initialized
+    if "praw_df" not in st.session_state:
+        st.session_state.praw_df = pd.DataFrame()  # Initialize an empty DataFrame
     if "post_data" not in st.session_state:
         st.session_state.post_data = pd.DataFrame()
     if "all_posts" not in st.session_state:
@@ -358,7 +360,7 @@ def main():
                 st.warning("No relevant sibling experience posts found.")
             else:
                 st.success(f"Fetched {len(praw_df)} posts related to sibling experiences.")
-                st.dataframe(praw_df)
+                st.dataframe(st.session_state.praw_df)
 
                 # Filter and display relevant posts
 #                relevant_posts = filter_relevant_posts(praw_df)
