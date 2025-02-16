@@ -71,8 +71,12 @@ sibling_terms = [
     "Brother","Brothers", "Brother’s", "Sister", "Sisters", "Sister’s","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
 ]
 
-query_batches = [[f'"{d} {s}"' for s in sibling_terms] for d in disability_terms]
+# Generate query combinations
+def generate_queries(disability_terms, sibling_terms, batch_size=3):
+    queries = [f'"{d} {s}"' for d in disability_terms for s in sibling_terms]
+    return [queries[i:i + batch_size] for i in range(0, len(queries), batch_size)]
 
+query_batches = generate_queries(disability_terms, sibling_terms, batch_size=5)
 
 # ZSL Labels (Categories for Filtering)
 zsl_labels = [
@@ -129,7 +133,10 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
         user_agent=REDDIT_USER_AGENT
     )
     data = []
-    seen_post_ids = set()  # Prevent duplicates
+    seen_post_ids = set()  # Prevent duplicates    
+    subreddit_instance = await reddit.subreddit(subreddit)
+
+	
     for batch in query_batches:  #  Iterate over query_batches correctly
         query = " OR ".join(batch)
         async for submission in subreddit_instance.search(query, limit=limit):
@@ -189,9 +196,11 @@ def group_terms(terms, group_size=3):
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
         
 async def fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter):
-    tasks = [fetch_praw_data(query_batch, start_date_utc, end_date_utc, limit=50, subreddit=subreddit_filter) for query_batch in query_batches]
-    results = await asyncio.gather(*tasks)
-    return pd.concat(results, ignore_index=True) if results else pd.DataFrame()
+    return await fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
+
+# ✅ Fix: Use asyncio.run() inside Streamlit function
+def fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter):
+    return asyncio.run(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
 
 # Async function to fetch comments for a specific post
 async def fetch_comments(post_id, limit=100):
@@ -358,8 +367,8 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching and Classifying Posts..."):
-            loop = asyncio.get_event_loop()
-            praw_df = loop.run_until_complete(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
+            praw_df = fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter)
+
 
             if praw_df.empty:
                 st.warning("No relevant sibling experience posts found.")
