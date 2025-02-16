@@ -462,7 +462,7 @@ def main():
             key="download_relevant_posts"  # Unique key for relevant posts
         )
     # Download All Posts
-    if not st.session_state.all_posts_df.empty:
+    if not st.session_state.all_posts.empty:
         st.sidebar.download_button(
             "Download All Posts",
             st.session_state.praw_df.to_csv(index=False),
