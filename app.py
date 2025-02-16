@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+	from datetime import datetime, timezone
 import subprocess
 import time  # Import the time module
 import sys
@@ -79,6 +79,9 @@ def generate_queries(disability_terms, sibling_terms, batch_size=3):
     return [queries[i:i + batch_size] for i in range(0, len(queries), batch_size)]
 
 query_batches = generate_queries(disability_terms, sibling_terms, batch_size=5)
+
+async def fetch_and_process():
+    return await fetch_praw_data(query, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
 
 # ZSL Labels (Categories for Filtering)
 zsl_labels = [
@@ -360,7 +363,7 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching and Classifying Posts..."):
-            praw_df = asyncio.run(fetch_praw_data(query, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter))
+            praw_df = asyncio.run(fetch_and_process())
 
             if praw_df.empty:
                 st.warning("No relevant sibling experience posts found.")
