@@ -198,7 +198,7 @@ def group_terms(terms, group_size=3):
 async def fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter):
     return await fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
 
-# ✅ Fix: Use asyncio.run() inside Streamlit function
+#  Fix: Use asyncio.run() inside Streamlit function
 def fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter):
     return asyncio.run(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
 
@@ -351,17 +351,17 @@ def main():
     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
     st.write(f"Fetching data from subreddit: `{subreddit_filter}`.")
 
-    disability_batches = group_terms(selected_disabilities)
-    sibling_batches = group_terms(selected_siblings)	
+#    disability_batches = group_terms(selected_disabilities)
+#    sibling_batches = group_terms(selected_siblings)	
 
     # Ensure session state variables are initialized
     if "praw_df" not in st.session_state:
         st.session_state.praw_df = pd.DataFrame()  # Initialize an empty DataFrame
-    if "post_data" not in st.session_state:
-        st.session_state.post_data = pd.DataFrame()
-    if "all_posts" not in st.session_state:
-        st.session_state.all_posts = pd.DataFrame()
-    if "comments_data" not in st.session_state:
+#    if "post_data" not in st.session_state:
+#        st.session_state.post_data = pd.DataFrame()
+#    if "all_posts" not in st.session_state:
+#        st.session_state.all_posts = pd.DataFrame()
+     if "comments_data" not in st.session_state:
         st.session_state.comments_data = pd.DataFrame()
     all_posts_df = pd.DataFrame()
     # Fetch Data
