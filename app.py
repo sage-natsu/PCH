@@ -130,7 +130,8 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
     )
     data = []
     seen_post_ids = set()  # Prevent duplicates
-    for query in query_batch:
+    for batch in query_batches:  #  Iterate over query_batches correctly
+        query = " OR ".join(batch)
         async for submission in subreddit_instance.search(query, limit=limit):
             if submission.id in seen_post_ids:
                 continue
@@ -357,7 +358,8 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching and Classifying Posts..."):
-            praw_df = asyncio.run(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
+             loop = asyncio.get_event_loop()
+             praw_df = loop.run_until_complete(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
 
             if praw_df.empty:
                 st.warning("No relevant sibling experience posts found.")
