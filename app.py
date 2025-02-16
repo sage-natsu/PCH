@@ -80,8 +80,6 @@ def generate_queries(disability_terms, sibling_terms, batch_size=3):
 
 query_batches = generate_queries(disability_terms, sibling_terms, batch_size=5)
 
-async def fetch_and_process():
-    return await fetch_praw_data(query, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
 
 # ZSL Labels (Categories for Filtering)
 zsl_labels = [
@@ -197,6 +195,8 @@ def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
         
+async def fetch_and_process():
+    return await fetch_praw_data(query, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
 
 # Async function to fetch comments for a specific post
 async def fetch_comments(post_id, limit=100):
