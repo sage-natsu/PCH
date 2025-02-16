@@ -358,8 +358,8 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching and Classifying Posts..."):
-             loop = asyncio.get_event_loop()
-             praw_df = loop.run_until_complete(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
+            loop = asyncio.get_event_loop()
+            praw_df = loop.run_until_complete(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
 
             if praw_df.empty:
                 st.warning("No relevant sibling experience posts found.")
