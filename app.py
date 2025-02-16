@@ -136,57 +136,54 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
     seen_post_ids = set()  # Prevent duplicates    
     subreddit_instance = await reddit.subreddit(subreddit)
 
-	
-    for batch in query_batches:  #  Iterate over query_batches correctly
-        query = " OR ".join(batch)
-        async for submission in subreddit_instance.search(query, limit=limit):
-            if submission.id in seen_post_ids:
-                continue
-            seen_post_ids.add(submission.id)
+    async for submission in subreddit_instance.search(query, limit=limit):
+        if submission.id in seen_post_ids:
+            continue
+        seen_post_ids.add(submission.id)
 
-            created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-            if not (start_date_utc <= created_date <= end_date_utc):
-                continue
+        created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+        if not (start_date_utc <= created_date <= end_date_utc):
+            continue
 
-            post_text = f"{submission.title} {submission.selftext}"
-            if not is_sibling_experience(post_text):  # Apply ZSL Filtering
-                continue
+        post_text = f"{submission.title} {submission.selftext}"
+        if not is_sibling_experience(post_text):  # Apply ZSL Filtering
+            continue
 
-            sentiment, emotion = analyze_sentiment_and_emotion(post_text)
-            post_data = {
-                "Post ID": submission.id,
-                "Title": submission.title,
-                "Body": submission.selftext,
-                "Upvotes": submission.score,
-                "Subreddit": submission.subreddit.display_name,
-                "Author": str(submission.author),
-                "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                "Sentiment": sentiment,
-                "Emotion": emotion,
-            }
+        sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+        post_data = {
+            "Post ID": submission.id,
+            "Title": submission.title,
+            "Body": submission.selftext,
+            "Upvotes": submission.score,
+            "Subreddit": submission.subreddit.display_name,
+            "Author": str(submission.author),
+            "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "Sentiment": sentiment,
+            "Emotion": emotion,
+        }
 
-            # Add extra data only if available
-            optional_attributes = {
-                "Num_Comments": getattr(submission, "num_comments", None),
-                "Over_18": getattr(submission, "over_18", None),
-                "URL": getattr(submission, "url", None),
-                "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-                "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-                "Pinned": getattr(submission, "stickied", None),
-                "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-                "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-                "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-                "Gilded": getattr(submission, "gilded", None),
-                "Edited": submission.edited if submission.edited else None
-                                                      }
+        # Add extra data only if available
+        optional_attributes = {
+            "Num_Comments": getattr(submission, "num_comments", None),
+            "Over_18": getattr(submission, "over_18", None),
+            "URL": getattr(submission, "url", None),
+            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+            "Pinned": getattr(submission, "stickied", None),
+            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+            "Gilded": getattr(submission, "gilded", None),
+            "Edited": submission.edited if submission.edited else None
+        }
 
-            # Add optional attributes if they are not None
-            for key, value in optional_attributes.items():
-                if value is not None:
-                    post_data[key] = value
+        # Add optional attributes if they are not None
+        for key, value in optional_attributes.items():
+            if value is not None:
+                post_data[key] = value
 
-            data.append(post_data)
-        await asyncio.sleep(0.3)  # 🔹 Avoid rate limits
+        data.append(post_data)
+      await asyncio.sleep(0.3)  # 🔹 Avoid rate limits
       # Ensure this return statement is aligned properly within the function
     	
     return pd.DataFrame(data)
@@ -351,8 +348,8 @@ def main():
     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
     st.write(f"Fetching data from subreddit: `{subreddit_filter}`.")
 
-#    disability_batches = group_terms(selected_disabilities)
-#    sibling_batches = group_terms(selected_siblings)	
+    disability_batches = group_terms(selected_disabilities)
+    sibling_batches = group_terms(selected_siblings)	
 
     # Ensure session state variables are initialized
     if "praw_df" not in st.session_state:
@@ -367,15 +364,27 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching and Classifying Posts..."):
-            praw_df = fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter)
+	    start_time = time.time()  # Start the timer	
+            all_posts_df = pd.DataFrame()	
+            for disability in disability_batches:
+                for sibling in sibling_batches:
+                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
+                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
+                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+            end_time = time.time()  # End the timer
+            elapsed_time = end_time - start_time  # Calculate the elapsed time	
+            if exclusion_words:
+                all_posts_df = all_posts_df[
+                    ~all_posts_df["Title"].str.lower().str.contains("|".join(exclusion_words), na=False)
+                    & ~all_posts_df["Body"].str.lower().str.contains("|".join(exclusion_words), na=False)
+                ]
 
-
-            if praw_df.empty:
+            if all_posts_df.empty:
                 st.warning("No relevant sibling experience posts found.")
             else:
-                st.success(f"Fetched {len(praw_df)} posts related to sibling experiences.")
-                st.session_state.praw_df = praw_df  # 🔹 Store in session state    
-                st.dataframe(praw_df)
+                st.success(f"Fetched {len(all_posts_df)} posts related to sibling experiences.")
+                st.session_state.praw_df = all_posts_df  # 🔹 Store in session state    
+                st.dataframe(all_posts_df)
 
                 # Filter and display relevant posts
 #                relevant_posts = filter_relevant_posts(praw_df)
@@ -396,9 +405,9 @@ def main():
 
                 # Post Highlights
                 st.subheader("Post Highlights")
-                st.write("**Most Upvoted Post:**", praw_df.loc[all_posts_df["Upvotes"].idxmax()])
-                st.write("**Latest Post:**", praw_df.loc[all_posts_df["Created_UTC"].idxmax()])
-                st.write("**Oldest Post:**", praw_df.loc[all_posts_df["Created_UTC"].idxmin()])
+                st.write("**Most Upvoted Post:**", all_posts_df.loc[all_posts_df["Upvotes"].idxmax()])
+                st.write("**Latest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmax()])
+                st.write("**Oldest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmin()])
 
                 # Heatmap of Sentiment vs Emotion
                 st.subheader("Heatmap of Sentiment vs Emotion")
@@ -407,7 +416,7 @@ def main():
                 # 1. Sentiment and Emotion Distribution by Topic
                 st.subheader("Sentiment and Emotion Distribution by Topic")
                 if not all_posts_df.empty:
-                    sentiment_emotion_dist = praw_df.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
+                    sentiment_emotion_dist = all_posts_df.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
                     fig = px.bar(sentiment_emotion_dist, x="Sentiment", y="Count", color="Emotion", title="Sentiment and Emotion Distribution by Topic")
                     st.plotly_chart(fig, use_container_width=True)
 
@@ -415,7 +424,7 @@ def main():
                 if not st.session_state.praw_df.empty:
                     st.subheader("Struggles Word Cloud")
                     relevant_text = " ".join(
-                        st.session_state.praw_df["Body"].dropna().tolist()
+                        st.session_state.all_posts_df["Body"].dropna().tolist()
                     )
                     struggle_words_only = " ".join([word for word in relevant_text.split() if word.lower() in struggle_keywords])
                     create_wordcloud(struggle_words_only, "Struggles Word Cloud")
@@ -431,11 +440,11 @@ def main():
            
            
                 st.subheader("Sentiment Distribution by Subreddit")       
-                if not st.session_state.praw_df.empty:
+                if not st.session_state.all_posts_df.empty:
                     plot_sentiment_by_subreddit(st.session_state.all_posts)
                    
                 st.subheader("Emotion Radar Chart")               
-                if not st.session_state.praw_df.empty:
+                if not st.session_state.all_posts_df.empty:
                     plot_emotion_radar(st.session_state.all_posts)
 
 
@@ -453,7 +462,7 @@ def main():
             key="download_relevant_posts"  # Unique key for relevant posts
         )
     # Download All Posts
-    if not st.session_state.praw_df.empty:
+    if not st.session_state.all_posts_df.empty:
         st.sidebar.download_button(
             "Download All Posts",
             st.session_state.praw_df.to_csv(index=False),
