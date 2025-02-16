@@ -71,9 +71,9 @@ sibling_terms = [
     "Brother","Brothers", "Brother’s", "Sister", "Sisters", "Sister’s","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
 ]
 
-# ✅ **Generate Query Batches**
+#  **Generate Query Batches**
 def generate_queries(disability_terms, sibling_terms):
-    queries = [f'"{d}" AND "{s}"' for d in disability_terms for s in sibling_terms]
+    queries = [f"({' OR '.join(d)}) AND ({' OR '.join(s)})" for d in disability_terms for s in sibling_terms]
     return queries
 query_batches = generate_queries(disability_terms, sibling_terms)	
 
