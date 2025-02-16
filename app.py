@@ -136,7 +136,7 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
     subreddit_instance = await reddit.subreddit(subreddit)
     for query in query_batches:
         try:
-	    async for submission in subreddit_instance.search(query, limit=limit):
+            async for submission in subreddit_instance.search(query, limit=limit):
                 if submission.id in seen_post_ids:
                     continue
                 seen_post_ids.add(submission.id)
