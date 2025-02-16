@@ -183,7 +183,7 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
                         post_data[key] = value
 
                 data.append(post_data)
-	except Exception as e:
+         except Exception as e:
             st.error(f"Error fetching data for query {query}: {str(e)}")
 
         await asyncio.sleep(0.3)  # 🔹 Avoid rate limits
