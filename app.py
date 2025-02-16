@@ -183,7 +183,7 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
                 post_data[key] = value
 
         data.append(post_data)
-       await asyncio.sleep(0.3)  # 🔹 Avoid rate limits
+    await asyncio.sleep(0.3)  # 🔹 Avoid rate limits
       # Ensure this return statement is aligned properly within the function
     	
     return pd.DataFrame(data)
