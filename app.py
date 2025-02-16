@@ -142,8 +142,7 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
                 seen_post_ids.add(submission.id)
 
                 try:
-                    created_timestamp = int(submission.created_utc)  # Convert to int
-                    created_date = datetime.utcfromtimestamp(created_timestamp).replace(tzinfo=timezone.utc)
+                    created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
                 except (ValueError, TypeError):
                     st.error(f"Skipping post {submission.id}: Invalid timestamp")
                     continue  # Skip if there's an issue with timestamp
