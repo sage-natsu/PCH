@@ -13,14 +13,13 @@ dependencies:
   - cpuonly
   - sentencepiece
   - asyncio
-  - matplotlib
   - plotly
   - spacy
   - seaborn
   - streamlit               # Streamlit library
   - transformers             # NLP models
   - tqdm                    # Progress bars
-  - wordcloud=1.9.2         # Specific WordCloud version
+  - wordcloud=1.9.4         # Specific WordCloud version
   - nltk                    # Natural Language Toolkit
   - scikit-learn            # Machine learning utilities
   - pip                     # Ensure pip is installed
