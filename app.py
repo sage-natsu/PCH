@@ -357,10 +357,10 @@ def main():
     # Ensure session state variables are initialized
     if "praw_df" not in st.session_state:
         st.session_state.praw_df = pd.DataFrame()  # Initialize an empty DataFrame
-#    if "post_data" not in st.session_state:
-#        st.session_state.post_data = pd.DataFrame()
-#    if "all_posts" not in st.session_state:
-#        st.session_state.all_posts = pd.DataFrame()
+    if "post_data" not in st.session_state:
+        st.session_state.post_data = pd.DataFrame()
+    if "all_posts" not in st.session_state:
+        st.session_state.all_posts = pd.DataFrame()
     if "comments_data" not in st.session_state:
         st.session_state.comments_data = pd.DataFrame()
     all_posts_df = pd.DataFrame()
