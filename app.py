@@ -21,7 +21,7 @@ import plotly.express as px
 import seaborn as sns
 import torch
 from transformers import pipeline
-
+import aiohttp  #  Import for faster parallel HTTP requests
 
 # Disable parallelism warning
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -71,14 +71,7 @@ sibling_terms = [
     "Brother","Brothers", "Brother’s", "Sister", "Sisters", "Sister’s","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
 ]
 
-# Generate Dynamic Query Combinations
-# Break Query into Smaller Batches**
-def generate_queries(disability_terms, sibling_terms, batch_size=3):
-    """Generates query batches to prevent URITooLong errors."""
-    queries = [f'"{d} {s}"' for d in disability_terms for s in sibling_terms]
-    return [queries[i:i + batch_size] for i in range(0, len(queries), batch_size)]
-
-query_batches = generate_queries(disability_terms, sibling_terms, batch_size=5)
+query_batches = [[f'"{d} {s}"' for s in sibling_terms] for d in disability_terms]
 
 
 # ZSL Labels (Categories for Filtering)
@@ -137,12 +130,10 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
     )
     data = []
     seen_post_ids = set()  # Prevent duplicates
-    subreddit_instance = await reddit.subreddit(subreddit)
-    for batch in query_batches:
-        query = " OR ".join(batch)  # Use smaller queries
+    for query in query_batch:
         async for submission in subreddit_instance.search(query, limit=limit):
             if submission.id in seen_post_ids:
-                continue  # Skip duplicates
+                continue
             seen_post_ids.add(submission.id)
 
             created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
@@ -150,7 +141,7 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
                 continue
 
             post_text = f"{submission.title} {submission.selftext}"
-            if not is_sibling_experience(post_text):  # Apply ZSL filter
+            if not is_sibling_experience(post_text):  # Apply ZSL Filtering
                 continue
 
             sentiment, emotion = analyze_sentiment_and_emotion(post_text)
@@ -187,8 +178,9 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
                     post_data[key] = value
 
             data.append(post_data)
-        await asyncio.sleep(1)  # 🔹 Avoid rate limits
+        await asyncio.sleep(0.3)  # 🔹 Avoid rate limits
       # Ensure this return statement is aligned properly within the function
+    	
     return pd.DataFrame(data)
     
 def group_terms(terms, group_size=3):
@@ -196,7 +188,9 @@ def group_terms(terms, group_size=3):
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
         
 async def fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter):
-    return await fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
+    tasks = [fetch_praw_data(query_batch, start_date_utc, end_date_utc, limit=50, subreddit=subreddit_filter) for query_batch in query_batches]
+    results = await asyncio.gather(*tasks)
+    return pd.concat(results, ignore_index=True) if results else pd.DataFrame()
 
 # Async function to fetch comments for a specific post
 async def fetch_comments(post_id, limit=100):
