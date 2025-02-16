@@ -364,7 +364,7 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching and Classifying Posts..."):
-	    start_time = time.time()  # Start the timer	
+            start_time = time.time()  # Start the timer	
             all_posts_df = pd.DataFrame()	
             for disability in disability_batches:
                 for sibling in sibling_batches:
