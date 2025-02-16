@@ -129,7 +129,7 @@ def is_sibling_experience(text):
     return any(score > 0.35 for score in result["scores"])  # Keep only posts with strong relevance
 
 # Async Function to Fetch Posts Using PRAW
-async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50, subreddit="all"):
+async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50, subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
@@ -195,8 +195,8 @@ def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
         
-async def fetch_and_process():
-    return await fetch_praw_data(query, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
+async def fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter):
+    return await fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=200, subreddit=subreddit_filter)
 
 # Async function to fetch comments for a specific post
 async def fetch_comments(post_id, limit=100):
@@ -363,7 +363,7 @@ def main():
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching and Classifying Posts..."):
-            praw_df = asyncio.run(fetch_and_process())
+            praw_df = asyncio.run(fetch_and_process(query_batches, start_date_utc, end_date_utc, subreddit_filter))
 
             if praw_df.empty:
                 st.warning("No relevant sibling experience posts found.")
