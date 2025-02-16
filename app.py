@@ -189,7 +189,7 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
         await asyncio.sleep(0.3)  # 🔹 Avoid rate limits
       # Ensure this return statement is aligned properly within the function
     	
-    qqqqqqqqqqq2return pd.DataFrame(data)
+    return pd.DataFrame(data)
     
 def group_terms(terms, group_size=3):
    
