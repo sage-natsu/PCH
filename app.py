@@ -83,11 +83,7 @@ zsl_labels = [
     "Emotional impact of sibling disability"
 ]
 
-# ✅ Generate Queries (Fix Formatting)
-def generate_queries(selected_disabilities, selected_siblings):
-    return [f"({d}) AND ({s})" for d in selected_disabilities for s in selected_siblings]
 
-query_batches = generate_queries(selected_disabilities, selected_siblings)
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -131,39 +127,50 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
     data = []
     seen_post_ids = set()
     subreddit_instance = await reddit.subreddit(subreddit)
-    for query in query_batches:
-        if not isinstance(query, str):
-            continue  # 🔹 Ensure we only process valid string queries
-        
-        try:
-            async for submission in subreddit_instance.search(query, limit=int(limit) if limit is not None else 50):
-                if submission.id in seen_post_ids:
-                    continue
-                seen_post_ids.add(submission.id)
+    async for submission in subreddit_instance.search(query, limit=limit):
+        if submission.id in seen_post_ids:
+            continue
+       seen_post_ids.add(submission.id)
+       created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+       post_text = f"{submission.title} {submission.selftext}"
+       if not is_sibling_experience(post_text):
+           continue
+       if not (start_date_utc <= created_date <= end_date_utc):
+           continue
+        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
 
-                created_timestamp = int(submission.created_utc)
-                created_date = datetime.utcfromtimestamp(created_timestamp).replace(tzinfo=timezone.utc)
+        # Prepare the post data
+        post_data = {
+            "Post ID": submission.id,
+            "Title": submission.title,
+            "Body": submission.selftext,
+            "Upvotes": submission.score,
+            "Subreddit": submission.subreddit.display_name,
+            "Author": str(submission.author),
+            "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "Sentiment": sentiment,
+            "Emotion": emotion,
+        }
 
-                if not (start_date_utc <= created_date <= end_date_utc):
-                    continue
+        # Add extra data only if available
+        optional_attributes = {
+            "Num_Comments": getattr(submission, "num_comments", None),
+            "Over_18": getattr(submission, "over_18", None),
+            "URL": getattr(submission, "url", None),
+            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+            "Pinned": getattr(submission, "stickied", None),
+            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+            "Gilded": getattr(submission, "gilded", None),
+            "Edited": submission.edited if submission.edited else None
+        }
 
-                post_text = f"{submission.title} {submission.selftext}"
-                if not is_sibling_experience(post_text):
-                    continue
-
-                sentiment, emotion = analyze_sentiment_and_emotion(post_text)
-                data.append({
-                    "Post ID": submission.id,
-                    "Title": submission.title,
-                    "Body": submission.selftext,
-                    "Subreddit": submission.subreddit.display_name,
-                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Sentiment": sentiment,
-                    "Emotion": emotion
-                })
-        
-        except Exception as e:
-            st.error(f"⚠️ Error fetching posts for query `{query}`: {str(e)}")
+        # Add optional attributes if they are not None
+        for key, value in optional_attributes.items():
+            if value is not None:
+                post_data[key] = value
         
         await asyncio.sleep(0.3)  # Avoid hitting API rate limits
 
@@ -172,13 +179,7 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
 def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
-
-def fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter):
-    try:
-        loop = asyncio.get_running_loop()
-        return loop.run_until_complete(fetch_praw_data(query_batches, start_date_utc, end_date_utc, subreddit_filter))
-    except RuntimeError:
-        return asyncio.run(fetch_praw_data(query_batches, start_date_utc, end_date_utc, subreddit_filter))   
+ 
 
 # Async function to fetch comments for a specific post
 async def fetch_comments(post_id, limit=100):
@@ -347,8 +348,11 @@ def main():
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	
             all_posts_df = pd.DataFrame()
-            praw_df = fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter)
-            all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)               
+            for disability in disability_batches:
+                for sibling in sibling_batches:
+                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
+                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
+                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)               
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
