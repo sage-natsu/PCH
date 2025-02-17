@@ -74,7 +74,7 @@ def load_zsl_model():
                     device=0 if torch.cuda.is_available() else -1) 
 
 # ✅ Load model once & cache it
-zsl_classifier = load_zsl_model()
+#zsl_classifier = load_zsl_model()
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
