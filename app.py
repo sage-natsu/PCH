@@ -10,6 +10,7 @@ try:
 except ModuleNotFoundError as e:
     print(f"Error importing asyncpraw: {e}")
 import streamlit as st
+os.environ["STREAMLIT_SERVER_RUN_ON_SAVE"] = "false"
 import pandas as pd
 import asyncpraw
 import nest_asyncio
