@@ -37,6 +37,9 @@ nest_asyncio.apply()
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
+# ✅ Initialize Zero-Shot Learning (ZSL) Model
+device = "cuda" if torch.cuda.is_available() else "cpu"
+zsl_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=0 if torch.cuda.is_available() else -1)
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
@@ -45,7 +48,7 @@ REDDIT_USER_AGENT = "windows:SiblingsDataApp:v1.0 (by /u/Proper-Leading-4091)"
 
 # Define disability and sibling terms
 disability_terms = [
-    "22q11.2", "ADHD", "Attention Deficit Hyperactivity Disorder", "ADD", "Angelman", "Attention Deficit Disorder"
+    "22q11.2", "ADHD", "Attention Deficit Hyperactivity Disorder", "ADD", "Angelman", "Attention Deficit Disorder",
     "Autism", "Autistic", "Asperger", "Aspergers", "Asperger's", "Aspie", "ASD", "CDKL5",
     "Cerebral Palsy", "Cognitive delay", "Cognitively delayed", "Cornelia de Lange", "CP" , "Developmental Condition", "Developmental Delay","Developmental Disorder",
     "Developmental Disability", "Disabled", "Disability", "Delayed", "Down Syndrome", "Down's Syndrome", "Downs Syndrome", "Epilepsy", "Epileptic",
@@ -69,7 +72,22 @@ struggle_keywords = [
     "caring", "caregiver", "overwhelmed", "anxious", "anxiety", "isolation", "loneliness",
     "balance", "pressure", "burnout", "neglect"
 ]
+# ZSL Labels (Categories for Filtering)
+zsl_labels = [
+    "Growing up with a disabled sibling",
+    "Supporting a disabled sibling",
+    "Challenges of having a neurodivergent sibling",
+    "Positive experiences with a sibling with disabilities",
+    "Struggles of being a sibling to a special needs child",
+    "Caring for a sibling with autism or Down syndrome",
+    "Emotional impact of sibling disability"
+]
 
+# ✅ Generate Queries (Fix Formatting)
+def generate_queries(disability_terms, sibling_terms):
+    return [f"({d}) AND ({s})" for d in disability_terms for s in sibling_terms]
+
+query_batches = generate_queries(disability_terms, sibling_terms)
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -92,62 +110,69 @@ def analyze_sentiment_and_emotion(text):
         "Neutral"
     )
     return sentiment, emotion
+	
+# ✅ Zero-Shot Classification Filter
+def is_sibling_experience(text):
+    result = zsl_classifier(text, [
+        "Growing up with a disabled sibling",
+        "Supporting a disabled sibling",
+        "Challenges of having a neurodivergent sibling"
+    ], multi_label=True)
+    return any(score > 0.35 for score in result["scores"])
+
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddit="all"):
+async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
     data = []
+    seen_post_ids = set()
     subreddit_instance = await reddit.subreddit(subreddit)
-    async for submission in subreddit_instance.search(query, limit=limit):
-        created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-        if not (start_date_utc <= created_date <= end_date_utc):
-            continue
-        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-        # Prepare the post data
-        post_data = {
-            "Post ID": submission.id,
-            "Title": submission.title,
-            "Body": submission.selftext,
-            "Upvotes": submission.score,
-            "Subreddit": submission.subreddit.display_name,
-            "Author": str(submission.author),
-            "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "Sentiment": sentiment,
-            "Emotion": emotion,
-        }
+    for query in query_batches:
+        async for submission in subreddit_instance.search(query, limit=limit):
+            if submission.id in seen_post_ids:
+                continue
+            seen_post_ids.add(submission.id)
 
-        # Add extra data only if available
-        optional_attributes = {
-            "Num_Comments": getattr(submission, "num_comments", None),
-            "Over_18": getattr(submission, "over_18", None),
-            "URL": getattr(submission, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-            "Pinned": getattr(submission, "stickied", None),
-            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-            "Gilded": getattr(submission, "gilded", None),
-            "Edited": submission.edited if submission.edited else None
-        }
+            try:
+                created_timestamp = int(submission.created_utc)
+                created_date = datetime.utcfromtimestamp(created_timestamp).replace(tzinfo=timezone.utc)
+            except (ValueError, TypeError):
+                continue
 
-        # Add optional attributes if they are not None
-        for key, value in optional_attributes.items():
-            if value is not None:
-                post_data[key] = value
+            if not (start_date_utc <= created_date <= end_date_utc):
+                continue
 
-        data.append(post_data)
+            post_text = f"{submission.title} {submission.selftext}"
+            if not is_sibling_experience(post_text):
+                continue
 
-    # Ensure this return statement is aligned properly within the function
+            sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+            data.append({
+                "Post ID": submission.id,
+                "Title": submission.title,
+                "Body": submission.selftext,
+                "Subreddit": submission.subreddit.display_name,
+                "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                "Sentiment": sentiment,
+                "Emotion": emotion
+            })
+        
+        await asyncio.sleep(0.3)
+
     return pd.DataFrame(data)
     
 def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
+# ✅ Fix AsyncIO Event Loop Conflict
+def fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return loop.run_until_complete(fetch_praw_data(query_batches, start_date_utc, end_date_utc, subreddit_filter))
         
 
 # Async function to fetch comments for a specific post
@@ -301,9 +326,6 @@ def main():
     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
     st.write(f"Fetching data from subreddit: `{subreddit_filter}`.")
 
-    disability_batches = group_terms(selected_disabilities)
-    sibling_batches = group_terms(selected_siblings)	
-
     # Initialize session states
     if "post_data" not in st.session_state:
         st.session_state.post_data = pd.DataFrame()
@@ -317,11 +339,8 @@ def main():
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	
             all_posts_df = pd.DataFrame()
-            for disability in disability_batches:
-                for sibling in sibling_batches:
-                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
-                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
-                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+            praw_df = fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter)
+            all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)               
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
@@ -359,9 +378,14 @@ def main():
 
                 # Post Highlights
                 st.subheader("Post Highlights")
-                st.write("**Most Upvoted Post:**", all_posts_df.loc[all_posts_df["Upvotes"].idxmax()])
-                st.write("**Latest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmax()])
-                st.write("**Oldest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmin()])
+                if not all_posts_df.empty:
+                    st.write("**Most Upvoted Post:**", all_posts_df.loc[all_posts_df["Upvotes"].idxmax()])
+                    st.write("**Latest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmax()])
+                    st.write("**Oldest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmin()])
+                else:
+                    st.write("No posts found.")
+
+
 
                 # Heatmap of Sentiment vs Emotion
                 st.subheader("Heatmap of Sentiment vs Emotion")
