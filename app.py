@@ -41,7 +41,7 @@ def load_zsl_model():
     try:
         return pipeline(
             "zero-shot-classification",
-            model="facebook/bart-large-mnli",  # ✅ Use BART instead of DeBERTa
+            model="typeform/distilbert-base-uncased-mnli",  # ✅ Use BART instead of DeBERTa
             device=0 if torch.cuda.is_available() else -1  # ✅ Runs on CPU if no GPU
         )
     except Exception as e:
