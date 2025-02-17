@@ -129,7 +129,7 @@ def analyze_sentiment_and_emotion(text):
     return sentiment, emotion
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddit="all"):
+async def fetch_praw_data(query_list, start_date_utc, end_date_utc, limit=50,subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
@@ -305,6 +305,9 @@ def plot_sentiment_by_subreddit(df):
                  title="Sentiment Distribution by Subreddit", barmode='group')
     st.plotly_chart(fig)
     
+# ✅ Generate Queries Efficiently
+def generate_queries(disability_terms, sibling_terms):
+    return [f"({' OR '.join(disability_terms)}) AND ({' OR '.join(sibling_terms)})"]
    
 
 # Main Streamlit app
@@ -340,8 +343,6 @@ def main():
     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
     st.write(f"Fetching data from subreddit: `{subreddit_filter}`.")
 
-    disability_batches = group_terms(selected_disabilities)
-    sibling_batches = group_terms(selected_siblings)	
 
     # Initialize session states
     if "post_data" not in st.session_state:
@@ -351,16 +352,17 @@ def main():
     if "comments_data" not in st.session_state:
         st.session_state.comments_data = pd.DataFrame()
     all_posts_df = pd.DataFrame()
+
+    # ✅ Generate Efficient Queries
+    query_list = generate_queries(selected_disabilities, selected_siblings)
+
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	
             all_posts_df = pd.DataFrame()
-            for disability in disability_batches:
-                for sibling in sibling_batches:
-                    query = f"({' OR '.join(disability)}) AND ({' OR '.join(sibling)})"
-                    praw_df = asyncio.run(fetch_praw_data(query,start_date_utc,end_date_utc, limit=50,subreddit=subreddit_filter))
-                    all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+            praw_df = asyncio.run(fetch_praw_data(query_list, start_date_utc, end_date_utc, limit=50))
+            all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
