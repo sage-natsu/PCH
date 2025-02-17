@@ -172,7 +172,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
             if value is not None:
                 post_data[key] = value
         data.append(post_data)
-      await asyncio.sleep(0.3)  # Avoid hitting API rate limits
+        await asyncio.sleep(0.3)  # Avoid hitting API rate limits
 
     return pd.DataFrame(data)
     
