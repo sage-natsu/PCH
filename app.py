@@ -84,10 +84,10 @@ zsl_labels = [
 ]
 
 # ✅ Generate Queries (Fix Formatting)
-def generate_queries(disability_terms, sibling_terms):
-    return [f"({d}) AND ({s})" for d in disability_terms for s in sibling_terms]
+def generate_queries(selected_disabilities, selected_siblings):
+    return [f"({d}) AND ({s})" for d in selected_disabilities for s in selected_siblings]
 
-query_batches = generate_queries(disability_terms, sibling_terms)
+query_batches = generate_queries(selected_disabilities, selected_siblings)
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -330,7 +330,10 @@ def main():
 
     st.write(f"Filtering data from {start_date_utc} to {end_date_utc}.")
     st.write(f"Fetching data from subreddit: `{subreddit_filter}`.")
-
+	
+    disability_batches = group_terms(selected_disabilities)
+    sibling_batches = group_terms(selected_siblings)
+	
     # Initialize session states
     if "post_data" not in st.session_state:
         st.session_state.post_data = pd.DataFrame()
