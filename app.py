@@ -25,7 +25,7 @@ nltk.download('wordnet')
 import torch
 torch.set_num_threads(1)
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
+from transformers import pipeline
 # Download VADER lexicon
 nltk.download('vader_lexicon')
 
