@@ -118,7 +118,7 @@ def is_sibling_experience(text):
 
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,subreddit="all"):
+async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
