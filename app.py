@@ -125,7 +125,7 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         user_agent=REDDIT_USER_AGENT,
     )
     data = []
-    seen_post_ids = set()
+#    seen_post_ids = set()
     subreddit_instance = await reddit.subreddit(subreddit)
     async for submission in subreddit_instance.search(query, limit=limit):
 #        if submission.id in seen_post_ids:
