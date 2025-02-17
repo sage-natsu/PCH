@@ -133,8 +133,8 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         seen_post_ids.add(submission.id)
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         post_text = f"{submission.title} {submission.selftext}"
-        if not is_sibling_experience(post_text):
-            continue
+       # if not is_sibling_experience(post_text):
+       #     continue
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
