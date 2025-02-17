@@ -136,52 +136,53 @@ async def fetch_praw_data(query_list, start_date_utc, end_date_utc, limit=50,sub
         user_agent=REDDIT_USER_AGENT,
     )
     data = []
-    subreddit_instance = await reddit.subreddit(subreddit)
-    async for submission in subreddit_instance.search(query, limit=limit):
-        created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-        if not (start_date_utc <= created_date <= end_date_utc):
-            continue
-        post_text = f"{submission.title} {submission.selftext}"
-        # ✅ Apply Zero-Shot Filtering (Remove Irrelevant Posts)
-        if not is_sibling_experience(post_text):
-            continue	    
-        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-        # Prepare the post data
-        post_data = {
-            "Post ID": submission.id,
-            "Title": submission.title,
-            "Body": submission.selftext,
-            "Upvotes": submission.score,
-            "Subreddit": submission.subreddit.display_name,
-            "Author": str(submission.author),
-            "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "Sentiment": sentiment,
-            "Emotion": emotion,
-        }
+    subreddit_instance = await reddit.subreddit("all")  # ✅ Search across ALL subreddits
+    for query in query_list:	
+        async for submission in subreddit_instance.search(query, limit=limit):
+            created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+            if not (start_date_utc <= created_date <= end_date_utc):
+                continue
+            post_text = f"{submission.title} {submission.selftext}"
+            # ✅ Apply Zero-Shot Filtering (Remove Irrelevant Posts)
+            if not is_sibling_experience(post_text):
+                continue	    
+            sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+            # Prepare the post data
+            post_data = {
+                "Post ID": submission.id,
+                "Title": submission.title,
+                "Body": submission.selftext,
+                "Upvotes": submission.score,
+                "Subreddit": submission.subreddit.display_name,
+                "Author": str(submission.author),
+                "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                "Sentiment": sentiment,
+                "Emotion": emotion,
+            }
 
-        # Add extra data only if available
-        optional_attributes = {
-            "Num_Comments": getattr(submission, "num_comments", None),
-            "Over_18": getattr(submission, "over_18", None),
-            "URL": getattr(submission, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-            "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-            "Pinned": getattr(submission, "stickied", None),
-            "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-            "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-            "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-            "Gilded": getattr(submission, "gilded", None),
-            "Edited": submission.edited if submission.edited else None
-        }
+            # Add extra data only if available
+            optional_attributes = {
+                "Num_Comments": getattr(submission, "num_comments", None),
+                "Over_18": getattr(submission, "over_18", None),
+                "URL": getattr(submission, "url", None),
+                "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                "Pinned": getattr(submission, "stickied", None),
+                "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                "Gilded": getattr(submission, "gilded", None),
+                "Edited": submission.edited if submission.edited else None
+            }
 
-        # Add optional attributes if they are not None
-        for key, value in optional_attributes.items():
-            if value is not None:
-                post_data[key] = value
+            # Add optional attributes if they are not None
+            for key, value in optional_attributes.items():
+                if value is not None:
+                    post_data[key] = value
 
-        data.append(post_data)
+            data.append(post_data)
 
-    # Ensure this return statement is aligned properly within the function
+        # Ensure this return statement is aligned properly within the function
     return pd.DataFrame(data)
     
 def group_terms(terms, group_size=3):
@@ -305,10 +306,19 @@ def plot_sentiment_by_subreddit(df):
                  title="Sentiment Distribution by Subreddit", barmode='group')
     st.plotly_chart(fig)
     
-# ✅ Generate Queries Efficiently
-def generate_queries(disability_terms, sibling_terms):
-    return [f"({' OR '.join(disability_terms)}) AND ({' OR '.join(sibling_terms)})"]
-   
+def generate_queries(disability_terms, sibling_terms, batch_size=3):
+    """Generate optimized Reddit search queries by batching terms."""
+    disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
+    sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
+    
+    queries = []
+    for disability_group in disability_batches:
+        for sibling_group in sibling_batches:
+            query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
+            queries.append(query)
+    
+    return queries
+
 
 # Main Streamlit app
 def main():
@@ -353,14 +363,15 @@ def main():
         st.session_state.comments_data = pd.DataFrame()
     all_posts_df = pd.DataFrame()
 
-    # ✅ Generate Efficient Queries
-    query_list = generate_queries(selected_disabilities, selected_siblings)
 
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	
             all_posts_df = pd.DataFrame()
+	    # ✅ Generate optimized queries for selected terms
+            query_list = generate_queries(selected_disabilities, selected_siblings)
+
             praw_df = asyncio.run(fetch_praw_data(query_list, start_date_utc, end_date_utc, limit=50))
             all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
             end_time = time.time()  # End the timer
