@@ -34,14 +34,19 @@ nest_asyncio.apply()
 
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
+
+# ✅ Load Zero-Shot Learning (ZSL) Model Once and Cache It
 @st.cache_resource
 def load_zsl_model():
-    return pipeline("zero-shot-classification", 
-                    model="cross-encoder/nli-deberta-v3-small", 
-                    device=0 if torch.cuda.is_available() else -1) 
+    return pipeline(
+        "zero-shot-classification",
+        model="cross-encoder/nli-deberta-v3-small",
+        device=0 if torch.cuda.is_available() else -1
+    )
 
-# ✅ Load model once & cache it
-#zsl_classifier = load_zsl_model()
+# ✅ Ensure model is loaded before function calls
+zsl_classifier = load_zsl_model()
+
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
