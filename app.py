@@ -132,49 +132,53 @@ async def fetch_praw_data(query_batches, start_date_utc, end_date_utc, limit=50,
     seen_post_ids = set()
     subreddit_instance = await reddit.subreddit(subreddit)
     for query in query_batches:
-        async for submission in subreddit_instance.search(query, limit=int(limit) if limit is not None else 50):
+        if not isinstance(query, str):
+            continue  # 🔹 Ensure we only process valid string queries
+        
+        try:
+            async for submission in subreddit_instance.search(query, limit=int(limit) if limit is not None else 50):
+                if submission.id in seen_post_ids:
+                    continue
+                seen_post_ids.add(submission.id)
 
-            if submission.id in seen_post_ids:
-                continue
-            seen_post_ids.add(submission.id)
-
-            try:
                 created_timestamp = int(submission.created_utc)
                 created_date = datetime.utcfromtimestamp(created_timestamp).replace(tzinfo=timezone.utc)
-            except (ValueError, TypeError):
-                continue
 
-            if not (start_date_utc <= created_date <= end_date_utc):
-                continue
+                if not (start_date_utc <= created_date <= end_date_utc):
+                    continue
 
-            post_text = f"{submission.title} {submission.selftext}"
-            if not is_sibling_experience(post_text):
-                continue
+                post_text = f"{submission.title} {submission.selftext}"
+                if not is_sibling_experience(post_text):
+                    continue
 
-            sentiment, emotion = analyze_sentiment_and_emotion(post_text)
-            data.append({
-                "Post ID": submission.id,
-                "Title": submission.title,
-                "Body": submission.selftext,
-                "Subreddit": submission.subreddit.display_name,
-                "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                "Sentiment": sentiment,
-                "Emotion": emotion
-            })
+                sentiment, emotion = analyze_sentiment_and_emotion(post_text)
+                data.append({
+                    "Post ID": submission.id,
+                    "Title": submission.title,
+                    "Body": submission.selftext,
+                    "Subreddit": submission.subreddit.display_name,
+                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                    "Sentiment": sentiment,
+                    "Emotion": emotion
+                })
         
-        await asyncio.sleep(0.3)
+        except Exception as e:
+            st.error(f"⚠️ Error fetching posts for query `{query}`: {str(e)}")
+        
+        await asyncio.sleep(0.3)  # Avoid hitting API rate limits
 
     return pd.DataFrame(data)
     
 def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
-# ✅ Fix AsyncIO Event Loop Conflict
+
 def fetch_data_wrapper(query_batches, start_date_utc, end_date_utc, subreddit_filter):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    return loop.run_until_complete(fetch_praw_data(query_batches, start_date_utc, end_date_utc, subreddit_filter))
-        
+    try:
+        loop = asyncio.get_running_loop()
+        return loop.run_until_complete(fetch_praw_data(query_batches, start_date_utc, end_date_utc, subreddit_filter))
+    except RuntimeError:
+        return asyncio.run(fetch_praw_data(query_batches, start_date_utc, end_date_utc, subreddit_filter))   
 
 # Async function to fetch comments for a specific post
 async def fetch_comments(post_id, limit=100):
