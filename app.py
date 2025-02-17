@@ -20,6 +20,8 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import plotly.express as px
 import seaborn as sns
 import nltk
+from transformers import pipeline
+import torch
 nltk.download('wordnet')
 
 # Download VADER lexicon
@@ -65,7 +67,14 @@ struggle_keywords = [
     "caring", "caregiver", "overwhelmed", "anxious", "anxiety", "isolation", "loneliness",
     "balance", "pressure", "burnout", "neglect"
 ]
+@st.cache_resource
+def load_zsl_model():
+    return pipeline("zero-shot-classification", 
+                    model="cross-encoder/nli-deberta-v3-small", 
+                    device=0 if torch.cuda.is_available() else -1) 
 
+# ✅ Load model once & cache it
+zsl_classifier = load_zsl_model()
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
