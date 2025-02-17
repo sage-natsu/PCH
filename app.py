@@ -34,7 +34,14 @@ nest_asyncio.apply()
 
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
+@st.cache_resource
+def load_zsl_model():
+    return pipeline("zero-shot-classification", 
+                    model="cross-encoder/nli-deberta-v3-small", 
+                    device=0 if torch.cuda.is_available() else -1) 
 
+# ✅ Load model once & cache it
+#zsl_classifier = load_zsl_model()
 
 # PRAW API credentials
 REDDIT_CLIENT_ID = "5fAjWkEjNuV3IS0bDT1eFw"
@@ -67,14 +74,24 @@ struggle_keywords = [
     "caring", "caregiver", "overwhelmed", "anxious", "anxiety", "isolation", "loneliness",
     "balance", "pressure", "burnout", "neglect"
 ]
-@st.cache_resource
-def load_zsl_model():
-    return pipeline("zero-shot-classification", 
-                    model="cross-encoder/nli-deberta-v3-small", 
-                    device=0 if torch.cuda.is_available() else -1) 
 
-# ✅ Load model once & cache it
-#zsl_classifier = load_zsl_model()
+
+# ✅ Categories for Zero-Shot Filtering
+zsl_labels = [
+    "Growing up with a disabled sibling",
+    "Supporting a disabled sibling",
+    "Challenges of having a neurodivergent sibling",
+    "Struggles of being a sibling to a special needs child",
+    "Caring for a sibling with autism or Down syndrome",
+    "Emotional impact of sibling disability"
+]
+# ✅ Function to check if a post is about sibling experience
+def is_sibling_experience(text):
+    if not text.strip():
+        return False
+    result = zsl_classifier(text, zsl_labels, multi_label=True)
+    return any(score > 0.35 for score in result["scores"])  # Keep only relevant posts
+
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -111,6 +128,10 @@ async def fetch_praw_data(query, start_date_utc, end_date_utc, limit=50,subreddi
         created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
         if not (start_date_utc <= created_date <= end_date_utc):
             continue
+        post_text = f"{submission.title} {submission.selftext}"
+        # ✅ Apply Zero-Shot Filtering (Remove Irrelevant Posts)
+        if not is_sibling_experience(post_text):
+            continue	    
         sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
         # Prepare the post data
         post_data = {
