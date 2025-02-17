@@ -21,6 +21,9 @@ import plotly.express as px
 import seaborn as sns
 import nltk
 nltk.download('wordnet')
+import torch
+torch.set_num_threads(1)
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 # Download VADER lexicon
 nltk.download('vader_lexicon')
