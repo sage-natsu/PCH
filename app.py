@@ -206,7 +206,8 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
             query_data.append(post_data)
 
     # ✅ Fetch all queries in parallel
-    results = await asyncio.gather(*[fetch_single_query(q) for q in queries])
+    results = await asyncio.gather(*[fetch_single_query(q) for q in queries], return_exceptions=True)
+
     for res in results:
         data.extend(res)
 
