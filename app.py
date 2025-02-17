@@ -400,7 +400,7 @@ def main():
             return
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	   
-            praw_df = asyncio.run(fetch_praw_data(queries, start_date, end_date, 50, subreddit_filter))
+            praw_df = asyncio.run(fetch_praw_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter))
         # ✅ Apply ZSL Filtering **AFTER** Fetching
             all_posts_df = filter_relevant_posts(praw_df)
 
