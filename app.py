@@ -98,13 +98,17 @@ zsl_labels = [
     "Caring for a sibling with autism or Down syndrome",
     "Emotional impact of sibling disability"
 ]
-# ✅ Function to check if a post is about sibling experience
-def is_sibling_experience(text):
-    if not text.strip():
-        return False
-    result = zsl_classifier(text, zsl_labels, multi_label=True)
-    return any(score > 0.35 for score in result["scores"])  # Keep only relevant posts
+# ✅ Function to Apply ZSL Filtering **AFTER** Fetching
+def filter_relevant_posts(df):
+    """Apply ZSL filtering to remove irrelevant posts **AFTER** fetching all data."""
+    if df.empty:
+        return df
 
+    df["Relevant"] = df["Body"].apply(lambda text: any(
+        score > 0.35 for score in zsl_classifier(text, zsl_labels, multi_label=True)["scores"]
+    ))
+
+    return df[df["Relevant"]]
 
 # Function for sentiment and emotion analysis
 def analyze_sentiment_and_emotion(text):
@@ -127,25 +131,44 @@ def analyze_sentiment_and_emotion(text):
         "Neutral"
     )
     return sentiment, emotion
+    
+    
+# ✅ Function to Construct Queries Properly
+def generate_queries(disability_terms, sibling_terms, batch_size=3):
+    """Generate optimized Reddit search queries by batching terms."""
+    if not disability_terms or not sibling_terms:
+        return []
+
+    disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
+    sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
+    
+    queries = []
+    for disability_group in disability_batches:
+        for sibling_group in sibling_batches:
+            query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
+            queries.append(query)
+    
+    return queries    
 
 # Async function to fetch posts using PRAW
-async def fetch_praw_data(query_list, start_date_utc, end_date_utc, limit=50,subreddit="all"):
+# ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
+async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subreddit="all"):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
     data = []
-    subreddit_instance = await reddit.subreddit("all")  # ✅ Search across ALL subreddits
-    for query in query_list:	
+    subreddit_instance = await reddit.subreddit(subreddit)
+
+    async def fetch_single_query(query):
+        """Fetches posts for a single query asynchronously."""
+        query_data = []
         async for submission in subreddit_instance.search(query, limit=limit):
             created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
             if not (start_date_utc <= created_date <= end_date_utc):
                 continue
-            post_text = f"{submission.title} {submission.selftext}"
-            # ✅ Apply Zero-Shot Filtering (Remove Irrelevant Posts)
-            if not is_sibling_experience(post_text):
-                continue	    
+
             sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
             # Prepare the post data
             post_data = {
@@ -180,11 +203,15 @@ async def fetch_praw_data(query_list, start_date_utc, end_date_utc, limit=50,sub
                 if value is not None:
                     post_data[key] = value
 
-            data.append(post_data)
+            query_data.append(post_data)
 
-        # Ensure this return statement is aligned properly within the function
+    # ✅ Fetch all queries in parallel
+    results = await asyncio.gather(*[fetch_single_query(q) for q in queries])
+    for res in results:
+        data.extend(res)
+
     return pd.DataFrame(data)
-    
+
 def group_terms(terms, group_size=3):
    
     return [terms[i:i + group_size] for i in range(0, len(terms), group_size)]
@@ -366,14 +393,17 @@ def main():
 
     # Fetch Data
     if st.sidebar.button("Fetch Data"):
-        with st.spinner("Fetching data... Please wait."):
-            start_time = time.time()  # Start the timer	
-            all_posts_df = pd.DataFrame()
-	    # ✅ Generate optimized queries for selected terms
-            query_list = generate_queries(selected_disabilities, selected_siblings)
+        queries = generate_queries(selected_disabilities, selected_siblings)
 
-            praw_df = asyncio.run(fetch_praw_data(query_list, start_date_utc, end_date_utc, limit=50))
-            all_posts_df = pd.concat([all_posts_df, praw_df], ignore_index=True)
+        if not queries:
+            st.error("Please select at least one disability term and one sibling term.")
+            return
+        with st.spinner("Fetching data... Please wait."):
+            start_time = time.time()  # Start the timer	   
+            praw_df = asyncio.run(fetch_praw_data(queries, start_date, end_date, 50, subreddit_filter))
+        # ✅ Apply ZSL Filtering **AFTER** Fetching
+            all_posts_df = filter_relevant_posts(praw_df)
+
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
