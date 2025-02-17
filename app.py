@@ -35,17 +35,25 @@ nest_asyncio.apply()
 # Initialize Sentiment Analyzer
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
-# ✅ Load Zero-Shot Learning (ZSL) Model Once and Cache It
+# ✅ Load Zero-Shot Model Efficiently & Handle Errors
 @st.cache_resource
 def load_zsl_model():
-    return pipeline(
-        "zero-shot-classification",
-        model="cross-encoder/nli-deberta-v3-small",
-        device=0 if torch.cuda.is_available() else -1
-    )
+    try:
+        return pipeline(
+            "zero-shot-classification",
+            model="facebook/bart-large-mnli",  # ✅ Use BART instead of DeBERTa
+            device=0 if torch.cuda.is_available() else -1  # ✅ Runs on CPU if no GPU
+        )
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
-# ✅ Ensure model is loaded before function calls
+# ✅ Load model once & handle failures
 zsl_classifier = load_zsl_model()
+
+# ✅ Ensure model is available before using
+if zsl_classifier is None:
+    st.error("Zero-shot model failed to load. Posts filtering will be skipped.")
 
 
 # PRAW API credentials
