@@ -18,6 +18,7 @@ dependencies:
   - seaborn
   - streamlit               # Streamlit library
   - transformers==4.47.0
+  - pipeline
   - tqdm                    # Progress bars
   - wordcloud=1.9.4         # Specific WordCloud version
   - nltk                    # Natural Language Toolkit
