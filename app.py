@@ -153,65 +153,84 @@ def generate_queries(disability_terms, sibling_terms, batch_size=3):
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
 async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subreddit="all"):
+    """Fetch Reddit posts asynchronously for given queries."""
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
+
     data = []
     subreddit_instance = await reddit.subreddit(subreddit)
 
     async def fetch_single_query(query):
         """Fetches posts for a single query asynchronously."""
         query_data = []
-        async for submission in subreddit_instance.search(query, limit=limit):
-            created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-            if not (start_date_utc <= created_date <= end_date_utc):
-                continue
+        try:
+            async for submission in subreddit_instance.search(query, limit=limit):
+                created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
-            sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-            # Prepare the post data
-            post_data = {
-                "Post ID": submission.id,
-                "Title": submission.title,
-                "Body": submission.selftext,
-                "Upvotes": submission.score,
-                "Subreddit": submission.subreddit.display_name,
-                "Author": str(submission.author),
-                "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                "Sentiment": sentiment,
-                "Emotion": emotion,
-            }
+                # ✅ Ensure correct date comparison
+                if not isinstance(start_date_utc, datetime) or not isinstance(end_date_utc, datetime):
+                    raise ValueError("start_date_utc or end_date_utc is not a datetime object")
 
-            # Add extra data only if available
-            optional_attributes = {
-                "Num_Comments": getattr(submission, "num_comments", None),
-                "Over_18": getattr(submission, "over_18", None),
-                "URL": getattr(submission, "url", None),
-                "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-                "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-                "Pinned": getattr(submission, "stickied", None),
-                "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-                "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-                "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-                "Gilded": getattr(submission, "gilded", None),
-                "Edited": submission.edited if submission.edited else None
-            }
+                if not (start_date_utc <= created_date <= end_date_utc):
+                    continue
 
-            # Add optional attributes if they are not None
-            for key, value in optional_attributes.items():
-                if value is not None:
-                    post_data[key] = value
+                sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
 
-            query_data.append(post_data)
+                # ✅ Store extracted post data
+                post_data = {
+                    "Post ID": submission.id,
+                    "Title": submission.title,
+                    "Body": submission.selftext,
+                    "Upvotes": submission.score,
+                    "Subreddit": submission.subreddit.display_name,
+                    "Author": str(submission.author),
+                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                    "Sentiment": sentiment,
+                    "Emotion": emotion,
+                }
 
-    # ✅ Fetch all queries in parallel
+                optional_attributes = {
+                    "Num_Comments": getattr(submission, "num_comments", None),
+                    "Over_18": getattr(submission, "over_18", None),
+                    "URL": getattr(submission, "url", None),
+                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                    "Pinned": getattr(submission, "stickied", None),
+                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                    "Gilded": getattr(submission, "gilded", None),
+                    "Edited": submission.edited if submission.edited else None
+                }
+
+                # ✅ Add optional attributes if they exist
+                for key, value in optional_attributes.items():
+                    if value is not None:
+                        post_data[key] = value
+
+                query_data.append(post_data)
+
+        except Exception as e:
+            st.error(f"Error fetching query `{query}`: {e}")
+
+        return query_data  # ✅ Ensure it always returns a list, even if empty.
+
+    # ✅ Run all queries in parallel
     results = await asyncio.gather(*[fetch_single_query(q) for q in queries], return_exceptions=True)
 
+    # ✅ Handle errors and ensure `results` contains lists
     for res in results:
-        data.extend(res)
+        if isinstance(res, list):
+            data.extend(res)  # ✅ Ensure data is only extended if valid
+        elif isinstance(res, Exception):
+            st.error(f"Error encountered while fetching data: {res}")
 
-    return pd.DataFrame(data)
+    # ✅ Ensure DataFrame format
+    return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC"])
+
 
 def group_terms(terms, group_size=3):
    
