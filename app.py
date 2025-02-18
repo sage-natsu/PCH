@@ -99,33 +99,34 @@ zsl_labels = [
     "Emotional impact of sibling disability"
 ]
 # ✅ Function to Apply ZSL Filtering **AFTER** Fetching
-def filter_relevant_posts(df):
-    """Apply ZSL filtering to remove irrelevant posts AFTER fetching all data."""
+def filter_relevant_posts(df, batch_size=25):
+    """Batch process Zero-Shot Classification instead of one-by-one calls."""
     if df.empty:
         return df
+    
+    df = df.dropna(subset=["Body"]).copy()  # Ensure no NaN texts
 
-    # ✅ Ensure `Body` column has no NaN values
-    df = df.dropna(subset=["Body"]).copy()
+    try:
+        relevance_scores = []
+        body_texts = df["Body"].tolist()
 
-    # ✅ Ensure `zsl_labels` is not empty
-    if not zsl_labels:
-        st.error("Zero-shot labels are empty. Skipping filtering.")
-        return df  # Return unfiltered data to prevent crashes
+        # ✅ Process in batches
+        for i in range(0, len(body_texts), batch_size):
+            batch = body_texts[i:i + batch_size]  # Get next batch
+            batch_results = zsl_classifier(batch, zsl_labels, multi_label=True)  # Process batch
+            
+            # ✅ Extract highest score per post in batch
+            batch_scores = [max(scores) for scores in batch_results["scores"]]
+            relevance_scores.extend(batch_scores)
 
-    def is_relevant(text):
-        """Run ZSL classification only if text is valid."""
-        if not isinstance(text, str) or not text.strip():
-            return False  # Skip empty or non-string values
-        try:
-            result = zsl_classifier(text, zsl_labels, multi_label=True)
-            return any(score > 0.35 for score in result["scores"])
-        except Exception as e:
-            st.error(f"ZSL filtering failed: {e}")
-            return False  # Skip problematic texts instead of crashing
+        df["Relevance_Score"] = relevance_scores
+        df = df[df["Relevance_Score"] > 0.35]  # Apply threshold
 
-    # ✅ Apply filtering safely
-    df["Relevant"] = df["Body"].apply(is_relevant)
-    return df[df["Relevant"]]
+    except Exception as e:
+        st.error(f"Zero-shot filtering failed: {e}")
+    
+    return df
+
 
 
 # Function for sentiment and emotion analysis
