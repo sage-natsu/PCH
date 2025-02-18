@@ -4,19 +4,19 @@ asyncpraw
 attrs
 blinker
 click
-numpy<2.0
+numpy
 pandas
 matplotlib
 nest-asyncio
 plotly
 seaborn
-transformers==4.47.0
+transformers==4.38.2
 wordcloud==1.9.4
 tqdm
 nltk
 scikit-learn
 fpdf
-torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
 termcolor
 aiohttp
 pipeline
