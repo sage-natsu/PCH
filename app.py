@@ -99,33 +99,47 @@ zsl_labels = [
     "Emotional impact of sibling disability"
 ]
 # ✅ Function to Apply ZSL Filtering **AFTER** Fetching
-def filter_relevant_posts(df, batch_size=25):
-    """Batch process Zero-Shot Classification instead of one-by-one calls."""
-    if df.empty:
+def filter_relevant_posts(df, batch_size=10):
+    """Batch process Zero-Shot Classification for CPU efficiency."""
+    if df.empty or not zsl_labels:
+        st.warning("Skipping Zero-Shot filtering: No posts or missing labels.")
         return df
     
-    df = df.dropna(subset=["Body"]).copy()  # Ensure no NaN texts
+    df = df.dropna(subset=["Body"]).copy()  # Remove NaN texts
+    df = df[df["Body"].str.strip() != ""]  # Remove empty strings
+    relevance_scores = []
 
     try:
-        relevance_scores = []
         body_texts = df["Body"].tolist()
 
-        # ✅ Process in batches
+        # ✅ Ensure we have valid inputs
+        if not body_texts:
+            st.warning("No valid posts to process for Zero-Shot classification.")
+            return df
+
+        # ✅ Process texts in small batches to prevent memory overload
         for i in range(0, len(body_texts), batch_size):
-            batch = body_texts[i:i + batch_size]  # Get next batch
+            batch = body_texts[i:i + batch_size]  # Get batch
+            
+            # ✅ Ensure batch is not empty before calling model
+            if not batch:
+                continue
+
             batch_results = zsl_classifier(batch, zsl_labels, multi_label=True)  # Process batch
             
             # ✅ Extract highest score per post in batch
-            batch_scores = [max(scores) for scores in batch_results["scores"]]
+            batch_scores = [max(result["scores"]) if result["scores"] else 0 for result in batch_results]
             relevance_scores.extend(batch_scores)
 
-        df["Relevance_Score"] = relevance_scores
+        # ✅ Ensure we have as many scores as rows in df
+        df["Relevance_Score"] = relevance_scores[:len(df)]
         df = df[df["Relevance_Score"] > 0.35]  # Apply threshold
 
     except Exception as e:
         st.error(f"Zero-shot filtering failed: {e}")
     
     return df
+
 
 
 
