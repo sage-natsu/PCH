@@ -4,7 +4,7 @@ asyncpraw
 attrs
 blinker
 click
-numpy
+numpy=1.26.4
 pandas
 matplotlib
 nest-asyncio
