@@ -94,13 +94,40 @@ struggle_keywords = [
 
 # ✅ Categories for Zero-Shot Filtering
 zsl_labels = [
+    # ✅ Existing labels
     "Growing up with a disabled sibling",
     "Supporting a disabled sibling",
     "Challenges of having a neurodivergent sibling",
     "Struggles of being a sibling to a special needs child",
     "Caring for a sibling with autism or Down syndrome",
-    "Emotional impact of sibling disability"
+    "Emotional impact of sibling disability",
+
+    # ✅ Expanded Labels for better coverage
+    "Feeling neglected as a sibling of a special needs child",
+    "The impact of having a disabled sibling on mental health",
+    "Balancing life while caring for a disabled sibling",
+    "Feeling responsible for a sibling with a disability",
+    "Struggles of an adult sibling of a disabled person",
+    "How my disabled sibling affects my personal life",
+    "Feeling overlooked because of my sibling’s special needs",
+    "Coping with the challenges of having a sibling with special needs",
+    "My experiences growing up as a sibling of a disabled person",
+    "Challenges of being the only sibling of a disabled person",
+    "Helping parents care for a disabled sibling",
+    "Experiencing guilt as a sibling of a disabled person",
+    "Sibling experiences in families with disabilities",
+    "Siblings of children with developmental disabilities",
+    "Siblings of children with genetic disorders",
+    "How my neurodivergent sibling has shaped my life",
+    "Living with a sibling who has special needs",
+    "Growing up in a family where a sibling has special needs",
+    "Being an older sibling to a disabled younger sibling",
+    "Being a younger sibling to a disabled older sibling",
+    "Having a disabled twin and its unique challenges",
+    "Struggles of being a caregiver for a sibling",
+    "Feeling burnout from supporting a disabled sibling"
 ]
+
 # ✅ Function to Apply ZSL Filtering **AFTER** Fetching
 def filter_relevant_posts(df, batch_size=10):
     """Batch process Zero-Shot Classification for CPU efficiency."""
