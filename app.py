@@ -22,6 +22,7 @@ import seaborn as sns
 import nltk
 from transformers import pipeline
 import torch
+import numpy as np
 nltk.download('wordnet')
 
 # Download VADER lexicon
@@ -44,9 +45,11 @@ def load_zsl_model():
             model="typeform/distilbert-base-uncased-mnli",  # ✅ Use BART instead of DeBERTa
             device=0 if torch.cuda.is_available() else -1  # ✅ Runs on CPU if no GPU
         )
+    except ImportError as e:
+        st.error("Error: Numpy is missing. Try installing with `pip install numpy`.")	    	    
     except Exception as e:
         st.error(f"Error loading model: {e}")
-        return None
+    return None
 
 # ✅ Load model once & handle failures
 zsl_classifier = load_zsl_model()
