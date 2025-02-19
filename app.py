@@ -40,5 +40,7 @@ def filter_relevant_posts(df, batch_size=10):
 
     except Exception as e:
         st.error(f"Zero-shot filtering failed: {e}")
-    
+    df = df.astype({col: str for col in df.select_dtypes(include=["object"]).columns})  # Ensure object columns are strings
+    df = df.astype({col: int for col in df.select_dtypes(include=["int64"]).columns})  # Convert int64 to Python int
+
     return df
