@@ -102,17 +102,13 @@ zsl_labels = [
     "Struggles of being a sibling to a special needs child",
     "Caring for a sibling with autism or Down syndrome",
     "Emotional impact of sibling disability",
-    # ✅ Expanded Labels for better coverage
     "Feeling neglected as a sibling of a special needs child",
     "The impact of having a disabled sibling on mental health",
     "Balancing life while caring for a disabled sibling",
     "Living with a sibling who has special needs",
     "Growing up in a family where a sibling has special needs",
     "Being an older sibling to a disabled younger sibling",
-    "Being a younger sibling to a disabled older sibling",
-    "Having a disabled twin and its unique challenges",
-    "Struggles of being a caregiver for a sibling",
-    "Feeling burnout from supporting a disabled sibling"
+    "Being a younger sibling to a disabled older sibling"
 ]
 
 # ✅ Function to Apply ZSL Filtering **AFTER** Fetching
