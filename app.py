@@ -397,18 +397,10 @@ def plot_sentiment_by_subreddit(df):
                  title="Sentiment Distribution by Subreddit", barmode='group')
     st.plotly_chart(fig)
     
-def generate_queries(disability_terms, sibling_terms, batch_size=3):
-    """Generate optimized Reddit search queries by batching terms."""
-    disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
-    sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
-    
-    queries = []
-    for disability_group in disability_batches:
-        for sibling_group in sibling_batches:
-            query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
-            queries.append(query)
-    
-    return queries
+@st.cache_data
+def cached_fetch_data(queries, start_date_utc, end_date_utc, limit_per_query, subreddit):
+    """Cache fetched Reddit posts to avoid duplicate fetching."""
+    return asyncio.run(fetch_praw_data_parallel(queries, start_date_utc, end_date_utc, limit_per_query, subreddit))
 
 
 # Main Streamlit app
@@ -464,7 +456,7 @@ def main():
             return
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	   
-            praw_df = asyncio.run(fetch_praw_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter))
+            praw_df = cached_fetch_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter)
         # ✅ Apply ZSL Filtering **AFTER** Fetching
             all_posts_df = filter_relevant_posts(praw_df)
 
