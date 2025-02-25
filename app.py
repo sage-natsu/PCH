@@ -474,7 +474,7 @@ def main():
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	
             all_posts = []
-	    for i, query_batch in enumerate(queries[:5]):  # ✅ Process 5 queries at a time
+            for i, query_batch in enumerate(queries[:5]):  # ✅ Process 5 queries at a time
                 praw_df = asyncio.run(fetch_praw_data([query_batch], start_date_utc, end_date_utc, 25, subreddit_filter))
 	
         # ✅ Apply ZSL Filtering **AFTER** Fetching
