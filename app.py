@@ -43,8 +43,7 @@ def load_zsl_model():
         return pipeline(
             "zero-shot-classification",
             model="typeform/distilbert-base-uncased-mnli",  # ✅ Use BART instead of DeBERTa
-	    device=-1  # ✅ Force CPU execution (avoids slow GPU fallback issues)	
-           # device=0 if torch.cuda.is_available() else -1  # ✅ Runs on CPU if no GPU
+            device=0 if torch.cuda.is_available() else -1  # ✅ Runs on CPU if no GPU
         )
     except ImportError as e:
         st.error("Error: Numpy is missing. Try installing with `pip install numpy`.")	    	    
@@ -101,18 +100,12 @@ zsl_labels = [
     "Challenges of having a neurodivergent sibling",
     "Struggles of being a sibling to a special needs child",
     "Caring for a sibling with autism or Down syndrome",
-    "Emotional impact of sibling disability",
-    "Feeling neglected as a sibling of a special needs child",
-    "The impact of having a disabled sibling on mental health",
-    "Balancing life while caring for a disabled sibling",
-    "Living with a sibling who has special needs",
-    "Growing up in a family where a sibling has special needs",
-    "Being an older sibling to a disabled younger sibling",
-    "Being a younger sibling to a disabled older sibling"
+    "Emotional impact of sibling disability"
+
 ]
 
 # ✅ Function to Apply ZSL Filtering **AFTER** Fetching
-def filter_relevant_posts(df, batch_size=20):
+def filter_relevant_posts(df, batch_size=10):
     """Batch process Zero-Shot Classification for CPU efficiency."""
     if df.empty:
         st.warning("Skipping Zero-Shot filtering: No posts.")
@@ -186,10 +179,11 @@ def analyze_sentiment_and_emotion(text):
     
     
 # ✅ Function to Construct Queries Properly
-def generate_queries(disability_terms, sibling_terms, batch_size=5):
+def generate_queries(disability_terms, sibling_terms, batch_size=3):
     """Generate optimized Reddit search queries by batching terms."""
-    
-    # ✅ Group disability and sibling terms into smaller batches
+    if not disability_terms or not sibling_terms:
+        return []
+
     disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
     sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
     
@@ -198,14 +192,12 @@ def generate_queries(disability_terms, sibling_terms, batch_size=5):
         for sibling_group in sibling_batches:
             query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
             queries.append(query)
-
-    return queries
-
     
+    return queries    
 
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
-async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=25, subreddit="all"):
+async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subreddit="all"):
     """Fetch Reddit posts asynchronously for given queries."""
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -472,19 +464,11 @@ def main():
             st.error("Please select at least one disability term and one sibling term.")
             return
         with st.spinner("Fetching data... Please wait."):
-            start_time = time.time()  # Start the timer	
-            all_posts = []
-            for i, query_batch in enumerate(queries[:5]):  # ✅ Process 5 queries at a time
-                praw_df = asyncio.run(fetch_praw_data([query_batch], start_date_utc, end_date_utc, 25, subreddit_filter))
-	
+            start_time = time.time()  # Start the timer	   
+            praw_df = asyncio.run(fetch_praw_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter))
         # ✅ Apply ZSL Filtering **AFTER** Fetching
-                if not praw_df.empty:
-                    praw_df = filter_relevant_posts(praw_df)
-                    all_posts.append(praw_df)
-       # ✅ Display partial results in real time
-                if all_posts:
-                    st.session_state.all_posts = pd.concat(all_posts)
-                    st.write(f"Fetched {len(st.session_state.all_posts)} posts so far...")	
+            all_posts_df = filter_relevant_posts(praw_df)
+
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
