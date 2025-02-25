@@ -186,11 +186,10 @@ def analyze_sentiment_and_emotion(text):
     
     
 # ✅ Function to Construct Queries Properly
-def generate_queries(disability_terms, sibling_terms, batch_size=3):
+def generate_queries(disability_terms, sibling_terms, batch_size=5):
     """Generate optimized Reddit search queries by batching terms."""
-    if not disability_terms or not sibling_terms:
-        return []
-
+    
+    # ✅ Group disability and sibling terms into smaller batches
     disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
     sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
     
@@ -199,12 +198,14 @@ def generate_queries(disability_terms, sibling_terms, batch_size=3):
         for sibling_group in sibling_batches:
             query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
             queries.append(query)
+
+    return queries
+
     
-    return queries    
 
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
-async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subreddit="all"):
+async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=25, subreddit="all"):
     """Fetch Reddit posts asynchronously for given queries."""
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -471,11 +472,19 @@ def main():
             st.error("Please select at least one disability term and one sibling term.")
             return
         with st.spinner("Fetching data... Please wait."):
-            start_time = time.time()  # Start the timer	   
-            praw_df = asyncio.run(fetch_praw_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter))
+            start_time = time.time()  # Start the timer	
+	    all_posts = []
+	    for i, query_batch in enumerate(queries[:5]):  # ✅ Process 5 queries at a time
+                praw_df = asyncio.run(fetch_praw_data([query_batch], start_date_utc, end_date_utc, 25, subreddit_filter))
+	
         # ✅ Apply ZSL Filtering **AFTER** Fetching
-            all_posts_df = filter_relevant_posts(praw_df)
-
+                if not praw_df.empty:
+                    praw_df = filter_relevant_posts(praw_df)
+                    all_posts.append(praw_df)
+       # ✅ Display partial results in real time
+                if all_posts:
+                    st.session_state.all_posts = pd.concat(all_posts)
+                    st.write(f"Fetched {len(st.session_state.all_posts)} posts so far...")	
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
             if exclusion_words:
