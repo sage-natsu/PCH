@@ -400,7 +400,7 @@ def plot_sentiment_by_subreddit(df):
 @st.cache_data
 def cached_fetch_data(queries, start_date_utc, end_date_utc, limit_per_query, subreddit):
     """Cache fetched Reddit posts to avoid duplicate fetching."""
-    return asyncio.run(fetch_praw_data_parallel(queries, start_date_utc, end_date_utc, limit_per_query, subreddit))
+    return asyncio.run(fetch_praw_data(queries, start_date_utc, end_date_utc, limit_per_query, subreddit))
 
 
 # Main Streamlit app
