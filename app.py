@@ -180,11 +180,8 @@ def analyze_sentiment_and_emotion(text):
     
     
 # ✅ Function to Construct Queries Properly
-def generate_queries(disability_terms, sibling_terms, batch_size=3):
-    """Generate optimized Reddit search queries by batching terms."""
-    if not disability_terms or not sibling_terms:
-        return []
-
+def generate_queries(disability_terms, sibling_terms, batch_size=5):
+    """Generate optimized Reddit search queries by batching terms to reduce API calls."""
     disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
     sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
     
@@ -194,7 +191,8 @@ def generate_queries(disability_terms, sibling_terms, batch_size=3):
             query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
             queries.append(query)
     
-    return queries    
+    return queries
+   
 
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
