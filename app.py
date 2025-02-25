@@ -43,7 +43,8 @@ def load_zsl_model():
         return pipeline(
             "zero-shot-classification",
             model="typeform/distilbert-base-uncased-mnli",  # ✅ Use BART instead of DeBERTa
-            device=0 if torch.cuda.is_available() else -1  # ✅ Runs on CPU if no GPU
+	    device=-1  # ✅ Force CPU execution (avoids slow GPU fallback issues)	
+           # device=0 if torch.cuda.is_available() else -1  # ✅ Runs on CPU if no GPU
         )
     except ImportError as e:
         st.error("Error: Numpy is missing. Try installing with `pip install numpy`.")	    	    
@@ -100,12 +101,18 @@ zsl_labels = [
     "Challenges of having a neurodivergent sibling",
     "Struggles of being a sibling to a special needs child",
     "Caring for a sibling with autism or Down syndrome",
-    "Emotional impact of sibling disability"
-
+    "Emotional impact of sibling disability",
+    "Feeling neglected as a sibling of a special needs child",
+    "The impact of having a disabled sibling on mental health",
+    "Balancing life while caring for a disabled sibling",
+    "Living with a sibling who has special needs",
+    "Growing up in a family where a sibling has special needs",
+    "Being an older sibling to a disabled younger sibling",
+    "Being a younger sibling to a disabled older sibling"
 ]
 
 # ✅ Function to Apply ZSL Filtering **AFTER** Fetching
-def filter_relevant_posts(df, batch_size=10):
+def filter_relevant_posts(df, batch_size=20):
     """Batch process Zero-Shot Classification for CPU efficiency."""
     if df.empty:
         st.warning("Skipping Zero-Shot filtering: No posts.")
