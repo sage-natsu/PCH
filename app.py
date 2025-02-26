@@ -477,7 +477,7 @@ def main():
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-                st.sidebar.download_button("Download Raw Data", raw_data.to_csv(index=False), "raw_reddit_data.csv")
+                st.sidebar.download_button("Download Raw Data", all_posts_df.to_csv(index=False), "raw_reddit_data.csv")
                 colab_url = "https://colab.research.google.com/drive/your_colab_notebook_id"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
 
