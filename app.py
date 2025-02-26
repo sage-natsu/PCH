@@ -477,6 +477,18 @@ def main():
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
+                st.sidebar.download_button("Download Raw Data", raw_data.to_csv(index=False), "raw_reddit_data.csv")
+                colab_url = "https://colab.research.google.com/drive/your_colab_notebook_id"
+                st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
+# **🔹 Upload Processed CSV from Colab**
+uploaded_file = st.file_uploader("Upload Processed Data from Colab", type=["csv"])
+if uploaded_file:
+    df_cleaned = pd.read_csv(uploaded_file)	
+    st.session_state.cleaned_data = df_cleaned
+    st.write("Processed Data from Colab:")
+    st.dataframe(df_cleaned)
+    st.sidebar.download_button("Download Processed Data", df_cleaned.to_csv(index=False), "final_filtered_reddit_data.csv")
+
 
                 # Filter and display relevant posts
 #                relevant_posts = filter_relevant_posts(all_posts_df)
