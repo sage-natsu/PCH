@@ -458,7 +458,7 @@ def main():
             start_time = time.time()  # Start the timer	   
             praw_df = cached_fetch_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter)
         # ✅ Apply ZSL Filtering **AFTER** Fetching
-            all_posts_df = filter_relevant_posts(praw_df)
+            all_posts_df = praw_df
 
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
