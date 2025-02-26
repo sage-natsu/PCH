@@ -478,7 +478,7 @@ def main():
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
                 st.sidebar.download_button("Download Raw Data", all_posts_df.to_csv(index=False), "raw_reddit_data.csv")
-                colab_url = "https://colab.research.google.com/drive/your_colab_notebook_id"
+                colab_url = "https://colab.research.google.com/drive/1514upaKg8Ah0ARiI72VVEOy3uT_RZSBY"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
 
 
