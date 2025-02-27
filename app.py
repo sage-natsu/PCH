@@ -188,8 +188,9 @@ def generate_queries(disability_terms, sibling_terms, batch_size=5):
     queries = []
     for disability_group in disability_batches:
         for sibling_group in sibling_batches:
-            query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
-            queries.append(query)
+            queries.append(f"{disability_group} AND {sibling_group}")  # Simpler, direct search terms	    	
+       #     query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
+       #     queries.append(query)
     
     return queries
    
