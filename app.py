@@ -508,6 +508,7 @@ def cached_fetch_data(queries, start_date_utc, end_date_utc, limit_per_query, su
 # Main Streamlit app
 def main():
     st.title("The Sibling Project: Reddit Data Analysis Dashboard")
+    df_cleaned = pd.DataFrame()
 
     # Sidebar filter inputs
     st.sidebar.header("Filters and Configuration")
