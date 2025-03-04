@@ -188,18 +188,25 @@ def generate_queries(disability_terms, sibling_terms, batch_size=5):
     queries = []
     for disability_group in disability_batches:
         for sibling_group in sibling_batches:
-     #       query = f"({' OR '.join(disability_group + sibling_group)})"
-      #      queries.append(f"{disability_group} AND {sibling_group}")  # Simpler, direct search terms	    	
-            query = f"({' OR '.join(disability_group)}) AND ({' OR '.join(sibling_group)})"
+            query = f"({' OR '.join(disability_group + sibling_group)})"
             queries.append(query)
-    
+
+    # ✅ Also fetch posts from specific sibling support subreddits
+    sibling_support_subreddits = [
+        "GlassChildren", "AutisticSiblings", "SiblingSupport",
+        "ParentingChildrenWithDisabilities", "DisabilitySiblings", "SpecialNeedsSiblings"
+    ]
+    for sub in sibling_support_subreddits:
+        queries.append(f"subreddit:{sub}")  # Fetch all posts from these subs
+
     return queries
+
    
 
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
 async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subreddit="all"):
-    """Fetch Reddit posts asynchronously for given queries."""
+    """Fetch Reddit posts asynchronously for given queries and sibling support subreddits."""
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
@@ -207,25 +214,26 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
     )
 
     data = []
-    subreddit_instance = await reddit.subreddit(subreddit)
+    
+    # ✅ New: List of sibling support subreddits to fetch all posts from
+    sibling_support_subreddits = [
+        "GlassChildren", "AutisticSiblings", "SiblingSupport",
+        "ParentingChildrenWithDisabilities", "DisabilitySiblings", "SpecialNeedsSiblings"
+    ]
 
     async def fetch_single_query(query):
-        """Fetches posts for a single query asynchronously."""
+        """Fetch posts from all subreddits using keyword queries."""
         query_data = []
         try:
+            subreddit_instance = await reddit.subreddit(subreddit)
             async for submission in subreddit_instance.search(query, limit=limit):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-
-                # ✅ Ensure correct date comparison
-                if not isinstance(start_date_utc, datetime) or not isinstance(end_date_utc, datetime):
-                    raise ValueError("start_date_utc or end_date_utc is not a datetime object")
 
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
 
                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
 
-                # ✅ Store extracted post data
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
@@ -237,46 +245,58 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                     "Sentiment": sentiment,
                     "Emotion": emotion,
                 }
-
-                optional_attributes = {
-                    "Num_Comments": getattr(submission, "num_comments", None),
-                    "Over_18": getattr(submission, "over_18", None),
-                    "URL": getattr(submission, "url", None),
-                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-                    "Pinned": getattr(submission, "stickied", None),
-                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-                    "Gilded": getattr(submission, "gilded", None),
-                    "Edited": submission.edited if submission.edited else None
-                }
-
-                # ✅ Add optional attributes if they exist
-                for key, value in optional_attributes.items():
-                    if value is not None:
-                        post_data[key] = value
-
                 query_data.append(post_data)
 
         except Exception as e:
             st.error(f"Error fetching query `{query}`: {e}")
 
-        return query_data  # ✅ Ensure it always returns a list, even if empty.
+        return query_data
 
-    # ✅ Run all queries in parallel
-    results = await asyncio.gather(*[fetch_single_query(q) for q in queries], return_exceptions=True)
+    async def fetch_sibling_subreddits():
+        """Fetch latest posts from sibling support subreddits."""
+        subreddit_posts = []
+        try:
+            for sub in sibling_support_subreddits:
+                subreddit_instance = await reddit.subreddit(sub)
+                async for submission in subreddit_instance.hot(limit=limit):
+                    created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
-    # ✅ Handle errors and ensure `results` contains lists
+                    if not (start_date_utc <= created_date <= end_date_utc):
+                        continue
+
+                    sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+
+                    post_data = {
+                        "Post ID": submission.id,
+                        "Title": submission.title,
+                        "Body": submission.selftext,
+                        "Upvotes": submission.score,
+                        "Subreddit": sub,  # Explicitly mention subreddit
+                        "Author": str(submission.author),
+                        "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                        "Sentiment": sentiment,
+                        "Emotion": emotion,
+                    }
+                    subreddit_posts.append(post_data)
+
+        except Exception as e:
+            st.error(f"Error fetching sibling support subreddits: {e}")
+
+        return subreddit_posts
+
+    # ✅ Run all queries and subreddit fetching in parallel
+    results = await asyncio.gather(
+        *[fetch_single_query(q) for q in queries],  # Keyword-based search
+        fetch_sibling_subreddits(),  # Sibling support subreddit fetch
+        return_exceptions=True
+    )
+
+    # ✅ Collect valid results
     for res in results:
         if isinstance(res, list):
-            data.extend(res)  # ✅ Ensure data is only extended if valid
-        elif isinstance(res, Exception):
-            st.error(f"Error encountered while fetching data: {res}")
+            data.extend(res)
 
-    # ✅ Ensure DataFrame format
     return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC"])
-
 
 def group_terms(terms, group_size=3):
    
