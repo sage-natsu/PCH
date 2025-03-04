@@ -193,8 +193,7 @@ def generate_queries(disability_terms, sibling_terms, batch_size=5):
 
     # ✅ Also fetch posts from specific sibling support subreddits
     sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport",
-        "ParentingChildrenWithDisabilities", "DisabilitySiblings", "SpecialNeedsSiblings"
+        "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings"
     ]
     for sub in sibling_support_subreddits:
         queries.append(f"subreddit:{sub}")  # Fetch all posts from these subs
@@ -240,6 +239,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
 
                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
 
+                # ✅ Prepare the post data with mandatory fields
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
@@ -251,6 +251,27 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                     "Sentiment": sentiment,
                     "Emotion": emotion,
                 }
+
+                # ✅ Add optional attributes if available
+                optional_attributes = {
+                    "Num_Comments": getattr(submission, "num_comments", None),
+                    "Over_18": getattr(submission, "over_18", None),
+                    "URL": getattr(submission, "url", None),
+                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                    "Pinned": getattr(submission, "stickied", None),
+                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                    "Gilded": getattr(submission, "gilded", None),
+                    "Edited": submission.edited if submission.edited else None
+                }
+
+                # ✅ Only add optional attributes if they are not None
+                for key, value in optional_attributes.items():
+                    if value is not None:
+                        post_data[key] = value
+
                 query_data.append(post_data)
 
         except Exception as e:
@@ -277,7 +298,6 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
 
     # ✅ Ensure at least an empty DataFrame is returned
     return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC"])
-
 
 async def fetch_sibling_subreddits(limit=50):
     """Fetch latest posts from valid sibling support subreddits."""
