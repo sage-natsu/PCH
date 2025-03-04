@@ -225,7 +225,11 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
     )
 
     data = []
-
+    # ✅ Fetch sibling support subreddits in parallel with keyword queries
+    sibling_posts = await fetch_sibling_subreddits()
+ # ✅ Add posts from sibling subreddits
+    if sibling_posts:
+        data.extend(sibling_posts)	
     async def fetch_single_query(query):
         """Fetches posts for a single query asynchronously."""
         query_data = []
@@ -279,8 +283,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
 
         return query_data
 
-    # ✅ Fetch sibling support subreddits in parallel with keyword queries
-    sibling_posts = await fetch_sibling_subreddits()
+
 
     results = await asyncio.gather(
         *[fetch_single_query(q) for q in queries],  # Keyword-based search
@@ -303,8 +306,7 @@ async def fetch_sibling_subreddits(limit=50):
     """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
     sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport",
-        "ParentingChildrenWithDisabilities", "DisabilitySiblings", "SpecialNeedsSiblings"
+        "GlassChildren", "AutisticSiblings", "SiblingSupport", "SpecialNeedsSiblings"
     ]
     
     reddit = asyncpraw.Reddit(
