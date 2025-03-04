@@ -206,7 +206,7 @@ def generate_queries(disability_terms, sibling_terms, batch_size=5):
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
 async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subreddit="all"):
-    """Fetch Reddit posts asynchronously for given queries and sibling support subreddits."""
+    """Fetch Reddit posts asynchronously for given keyword queries AND sibling support subreddits."""
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
@@ -214,15 +214,9 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
     )
 
     data = []
-    
-    # ✅ New: List of sibling support subreddits to fetch all posts from
-    sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport",
-        "ParentingChildrenWithDisabilities", "DisabilitySiblings", "SpecialNeedsSiblings"
-    ]
 
     async def fetch_single_query(query):
-        """Fetch posts from all subreddits using keyword queries."""
+        """Fetches posts for a single query asynchronously."""
         query_data = []
         try:
             subreddit_instance = await reddit.subreddit(subreddit)
@@ -252,42 +246,10 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
 
         return query_data
 
-    async def fetch_sibling_subreddits():
-        """Fetch latest posts from sibling support subreddits."""
-        subreddit_posts = []
-        try:
-            for sub in sibling_support_subreddits:
-                subreddit_instance = await reddit.subreddit(sub)
-                async for submission in subreddit_instance.hot(limit=limit):
-                    created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-
-                    if not (start_date_utc <= created_date <= end_date_utc):
-                        continue
-
-                    sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
-
-                    post_data = {
-                        "Post ID": submission.id,
-                        "Title": submission.title,
-                        "Body": submission.selftext,
-                        "Upvotes": submission.score,
-                        "Subreddit": sub,  # Explicitly mention subreddit
-                        "Author": str(submission.author),
-                        "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                        "Sentiment": sentiment,
-                        "Emotion": emotion,
-                    }
-                    subreddit_posts.append(post_data)
-
-        except Exception as e:
-            st.error(f"Error fetching sibling support subreddits: {e}")
-
-        return subreddit_posts
-
-    # ✅ Run all queries and subreddit fetching in parallel
+    # ✅ Fetch sibling support subreddits in parallel with keyword queries
     results = await asyncio.gather(
         *[fetch_single_query(q) for q in queries],  # Keyword-based search
-        fetch_sibling_subreddits(),  # Sibling support subreddit fetch
+        fetch_sibling_subreddits(),  # Fetch sibling subreddit posts
         return_exceptions=True
     )
 
@@ -296,7 +258,54 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
         if isinstance(res, list):
             data.extend(res)
 
+    # ✅ Ensure at least an empty DataFrame is returned
     return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC"])
+
+
+async def fetch_sibling_subreddits(limit=50):
+    """Fetch latest posts from sibling support subreddits."""
+    subreddit_posts = []
+    sibling_support_subreddits = [
+        "GlassChildren", "AutisticSiblings", "SiblingSupport",
+        "ParentingChildrenWithDisabilities", "DisabilitySiblings", "SpecialNeedsSiblings"
+    ]
+    
+    reddit = asyncpraw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT,
+    )
+
+    for sub in sibling_support_subreddits:
+        try:
+            subreddit_instance = await reddit.subreddit(sub, fetch=True)  # ✅ Ensure subreddit exists
+            async for submission in subreddit_instance.hot(limit=limit):
+                created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
+
+                sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+
+                post_data = {
+                    "Post ID": submission.id,
+                    "Title": submission.title,
+                    "Body": submission.selftext,
+                    "Upvotes": submission.score,
+                    "Subreddit": sub,
+                    "Author": str(submission.author),
+                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                    "Sentiment": sentiment,
+                    "Emotion": emotion,
+                }
+                subreddit_posts.append(post_data)
+
+        except asyncpraw.exceptions.RedditAPIException as e:
+            st.warning(f"⚠️ API Error fetching r/{sub}: {e}")
+        except asyncpraw.exceptions.NotFound:
+            st.warning(f"❌ Subreddit r/{sub} not found (might be private or removed).")
+        except Exception as e:
+            st.error(f"⚠️ Error fetching r/{sub}: {e}")
+
+    return subreddit_posts
+
 
 def group_terms(terms, group_size=3):
    
