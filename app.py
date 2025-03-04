@@ -609,19 +609,19 @@ def main():
    
                 # Top 5 Subreddits
                 st.subheader("Top 5 Popular Subreddits")
-                top_subreddits = all_posts_df["Subreddit"].value_counts().head(5)
+                top_subreddits = df_cleaned["Subreddit"].value_counts().head(5)
                 st.bar_chart(top_subreddits)
 
                 # Word Cloud
                 st.subheader("Word Cloud of Post Titles")
-                create_wordcloud(" ".join(all_posts_df["Title"].dropna()), "Post Titles Word Cloud")
+                create_wordcloud(" ".join(df_cleaned["Title"].dropna()), "Post Titles Word Cloud")
 
 
                 # Post Highlights
                 st.subheader("Post Highlights")
-                st.write("**Most Upvoted Post:**", all_posts_df.loc[all_posts_df["Upvotes"].idxmax()])
-                st.write("**Latest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmax()])
-                st.write("**Oldest Post:**", all_posts_df.loc[all_posts_df["Created_UTC"].idxmin()])
+                st.write("**Most Upvoted Post:**", df_cleaned.loc[all_posts_df["Upvotes"].idxmax()])
+                st.write("**Latest Post:**", df_cleaned.loc[all_posts_df["Created_UTC"].idxmax()])
+                st.write("**Oldest Post:**", df_cleaned.loc[all_posts_df["Created_UTC"].idxmin()])
 
                 # Heatmap of Sentiment vs Emotion
                 st.subheader("Heatmap of Sentiment vs Emotion")
@@ -629,16 +629,16 @@ def main():
 
                 # 1. Sentiment and Emotion Distribution by Topic
                 st.subheader("Sentiment and Emotion Distribution by Topic")
-                if not all_posts_df.empty:
-                    sentiment_emotion_dist = all_posts_df.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
+                if not df_cleaned.empty:
+                    sentiment_emotion_dist = df_cleaned.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
                     fig = px.bar(sentiment_emotion_dist, x="Sentiment", y="Count", color="Emotion", title="Sentiment and Emotion Distribution by Topic")
                     st.plotly_chart(fig, use_container_width=True)
 
                 # 2. Struggles Word Cloud for Siblings
-                if not st.session_state.post_data.empty:
+                if not st.session_state.df_cleaned.empty:
                     st.subheader("Struggles Word Cloud")
                     relevant_text = " ".join(
-                        st.session_state.post_data["Body"].dropna().tolist()
+                        st.session_state.df_cleaned["Body"].dropna().tolist()
                     )
                     struggle_words_only = " ".join([word for word in relevant_text.split() if word.lower() in struggle_keywords])
                     create_wordcloud(struggle_words_only, "Struggles Word Cloud")
@@ -646,20 +646,20 @@ def main():
 
                 # 4. Most Discussed Subreddits
                 st.subheader("Most Discussed Subreddits")
-                if not all_posts_df.empty:
-                    subreddit_count = all_posts_df["Subreddit"].value_counts().head(10).reset_index()
+                if not df_cleaned.empty:
+                    subreddit_count = df_cleaned["Subreddit"].value_counts().head(10).reset_index()
                     subreddit_count.columns = ["Subreddit", "Count"]
                     fig = px.bar(subreddit_count, x="Subreddit", y="Count", title="Most Discussed Subreddits")
                     st.plotly_chart(fig, use_container_width=True)
            
            
                 st.subheader("Sentiment Distribution by Subreddit")       
-                if not st.session_state.all_posts.empty:
-                    plot_sentiment_by_subreddit(st.session_state.all_posts)
+                if not st.session_state.df_cleaned.empty:
+                    plot_sentiment_by_subreddit(st.session_state.df_cleaned)
                    
                 st.subheader("Emotion Radar Chart")               
-                if not st.session_state.all_posts.empty:
-                    plot_emotion_radar(st.session_state.all_posts)
+                if not st.session_state.df_cleaned.empty:
+                    plot_emotion_radar(st.session_state.df_cleaned)
 
 
 # **🔹 Upload Processed CSV from Colab**
