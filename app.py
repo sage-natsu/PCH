@@ -202,6 +202,23 @@ def generate_queries(disability_terms, sibling_terms, batch_size=5):
     return queries
 
    
+async def is_subreddit_valid(reddit, subreddit_name):
+    """Check if a subreddit exists and is accessible."""
+    try:
+        subreddit = await reddit.subreddit(subreddit_name, fetch=True)
+        if subreddit.over18:
+            st.warning(f"⚠️ Skipping r/{subreddit_name} (NSFW content).")
+            return False
+        return True
+    except asyncpraw.exceptions.NotFound:
+        st.warning(f"❌ Subreddit r/{subreddit_name} not found (private or deleted).")
+        return False
+    except asyncpraw.exceptions.RedditAPIException as e:
+        st.warning(f"⚠️ API Error checking r/{subreddit_name}: {e}")
+        return False
+    except Exception as e:
+        st.error(f"⚠️ Error checking r/{subreddit_name}: {e}")
+        return False
 
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
@@ -247,9 +264,10 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
         return query_data
 
     # ✅ Fetch sibling support subreddits in parallel with keyword queries
+    sibling_posts = await fetch_sibling_subreddits()
+
     results = await asyncio.gather(
         *[fetch_single_query(q) for q in queries],  # Keyword-based search
-        fetch_sibling_subreddits(),  # Fetch sibling subreddit posts
         return_exceptions=True
     )
 
@@ -258,12 +276,16 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
         if isinstance(res, list):
             data.extend(res)
 
+    # ✅ Add posts from sibling subreddits
+    if sibling_posts:
+        data.extend(sibling_posts)
+
     # ✅ Ensure at least an empty DataFrame is returned
     return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC"])
 
 
 async def fetch_sibling_subreddits(limit=50):
-    """Fetch latest posts from sibling support subreddits."""
+    """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
     sibling_support_subreddits = [
         "GlassChildren", "AutisticSiblings", "SiblingSupport",
@@ -276,9 +298,19 @@ async def fetch_sibling_subreddits(limit=50):
         user_agent=REDDIT_USER_AGENT,
     )
 
+    # ✅ Check which subreddits are valid before fetching
+    valid_subreddits = []
     for sub in sibling_support_subreddits:
+        if await is_subreddit_valid(reddit, sub):
+            valid_subreddits.append(sub)
+
+    if not valid_subreddits:
+        st.warning("⚠️ No valid sibling support subreddits found.")
+        return []
+
+    for sub in valid_subreddits:
         try:
-            subreddit_instance = await reddit.subreddit(sub, fetch=True)  # ✅ Ensure subreddit exists
+            subreddit_instance = await reddit.subreddit(sub)
             async for submission in subreddit_instance.hot(limit=limit):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
@@ -299,12 +331,11 @@ async def fetch_sibling_subreddits(limit=50):
 
         except asyncpraw.exceptions.RedditAPIException as e:
             st.warning(f"⚠️ API Error fetching r/{sub}: {e}")
-        except asyncpraw.exceptions.NotFound:
-            st.warning(f"❌ Subreddit r/{sub} not found (might be private or removed).")
         except Exception as e:
             st.error(f"⚠️ Error fetching r/{sub}: {e}")
 
     return subreddit_posts
+
 
 
 def group_terms(terms, group_size=3):
