@@ -210,15 +210,10 @@ async def is_subreddit_valid(reddit, subreddit_name):
             st.warning(f"⚠️ Skipping r/{subreddit_name} (NSFW content).")
             return False
         return True
-    except asyncpraw.exceptions.NotFound:
-        st.warning(f"❌ Subreddit r/{subreddit_name} not found (private or deleted).")
+    except Exception as e:  # ✅ Catch all exceptions instead of `asyncpraw.exceptions.NotFound`
+        st.warning(f"❌ Error checking r/{subreddit_name}: {e}")
         return False
-    except asyncpraw.exceptions.RedditAPIException as e:
-        st.warning(f"⚠️ API Error checking r/{subreddit_name}: {e}")
-        return False
-    except Exception as e:
-        st.error(f"⚠️ Error checking r/{subreddit_name}: {e}")
-        return False
+
 
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
