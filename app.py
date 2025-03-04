@@ -331,6 +331,7 @@ async def fetch_sibling_subreddits(limit=50):
 
                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
 
+                # ✅ Prepare the post data
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
@@ -342,6 +343,27 @@ async def fetch_sibling_subreddits(limit=50):
                     "Sentiment": sentiment,
                     "Emotion": emotion,
                 }
+
+                # ✅ Add optional attributes if available
+                optional_attributes = {
+                    "Num_Comments": getattr(submission, "num_comments", None),
+                    "Over_18": getattr(submission, "over_18", None),
+                    "URL": getattr(submission, "url", None),
+                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                    "Pinned": getattr(submission, "stickied", None),
+                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                    "Gilded": getattr(submission, "gilded", None),
+                    "Edited": submission.edited if submission.edited else None
+                }
+
+                # ✅ Only add optional attributes if they are not None
+                for key, value in optional_attributes.items():
+                    if value is not None:
+                        post_data[key] = value
+
                 subreddit_posts.append(post_data)
 
         except asyncpraw.exceptions.RedditAPIException as e:
@@ -350,6 +372,7 @@ async def fetch_sibling_subreddits(limit=50):
             st.error(f"⚠️ Error fetching r/{sub}: {e}")
 
     return subreddit_posts
+
 
 
 
