@@ -440,41 +440,6 @@ def get_synonyms(word):
             synonyms.add(lemma.name().replace("_", " ").lower())
     return list(synonyms)
 
-# Extend struggle_keywords with synonyms
-#def expand_struggle_keywords(keywords):
-#    expanded_keywords = set(keywords)
-#    for word in keywords:
- #       expanded_keywords.update(get_synonyms(word))
-#    return list(expanded_keywords)
-    
-    
-
-# Initial struggle keywords
-#struggle_keywords = [
-#    "struggle", "challenge", "hardship", "difficulty", "burden", "overlooked"
-#]
-
-# Dynamically expand struggle_keywords
-#struggle_keywords = expand_struggle_keywords(struggle_keywords)
-#print(f"Expanded struggle keywords: {struggle_keywords}")
-
-
-# filter_relevant_posts function
-# def filter_relevant_posts(df):
-#    expanded_emotions = ["Sad", "Angry", "Fearful", "Neutral", "Confused", "Overwhelmed", "Stressed"]
-
-    # Check for sibling context
-#    df["Sibling_Context"] = df["Body"].str.contains("|".join(sibling_terms), case=False, na=False)
-
-    # Apply filters
-#    filtered_df = df[
- #       df["Sibling_Context"] & 
- #       (df["Sentiment"].isin(["Negative", "Neutral", "Positive"])) & 
-  #      (df["Emotion"].isin(expanded_emotions)) & 
-  #      (df["Body"].str.contains("|".join(struggle_keywords), case=False, na=False))
-#    ]
- #   return filtered_df
-
     
 def plot_emotion_radar(df):
     if df.empty:
@@ -585,108 +550,82 @@ def main():
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
 
 
-                # Filter and display relevant posts
-#                relevant_posts = filter_relevant_posts(all_posts_df)
-#                st.session_state.post_data = relevant_posts
-#                st.write(f"Total relevant records: {len(relevant_posts)}")
-#                st.subheader("Relevant Posts")
-#                st.dataframe(relevant_posts)
+
                 # 🔹 Upload Processed CSV from Google Colab
                 st.subheader("Upload Processed Data from Colab")
                 uploaded_file = st.file_uploader("Upload Processed CSV", type=["csv"])
+				
 
                 if uploaded_file:
                     df_cleaned = pd.read_csv(uploaded_file)
                     st.session_state.cleaned_data = df_cleaned  # Store cleaned data in session state
+					st.write("Processed Data from Colab:")
                     st.success("✅ Processed data successfully uploaded!")
+				    st.dataframe(df_cleaned)
+					st.sidebar.download_button("Download Processed Data", df_cleaned.to_csv(index=False), "final_filtered_reddit_data.csv")
     
-                # ✅ Display the processed data
-                st.subheader("Filtered Reddit Posts After ZSL")
-                st.dataframe(df_cleaned)
 
-                # ✅ Enable downloading of the processed data
-                st.sidebar.download_button("Download Processed Data", df_cleaned.to_csv(index=False), "final_filtered_reddit_data.csv")
-   
-                # Top 5 Subreddits
-                st.subheader("Top 5 Popular Subreddits")
-                top_subreddits = df_cleaned["Subreddit"].value_counts().head(5)
-                st.bar_chart(top_subreddits)
-
-                # Word Cloud
+                # Word Cloud for Titles & Bodies
                 st.subheader("Word Cloud of Post Titles")
-                create_wordcloud(" ".join(df_cleaned["Title"].dropna()), "Post Titles Word Cloud")
+                wordcloud = WordCloud(background_color="white").generate(" ".join(df["Title"].dropna()))
+                plt.imshow(wordcloud, interpolation="bilinear")
+                plt.axis("off")
+                st.pyplot(plt)
 
+                st.subheader("Word Cloud of Post Content")
+                wordcloud_body = WordCloud(background_color="white").generate(" ".join(df["Body"].dropna()))
+                plt.imshow(wordcloud_body, interpolation="bilinear")
+                plt.axis("off")
+                st.pyplot(plt)
 
-                # Post Highlights
-                st.subheader("Post Highlights")
-                st.write("**Most Upvoted Post:**", df_cleaned.loc[all_posts_df["Upvotes"].idxmax()])
-                st.write("**Latest Post:**", df_cleaned.loc[all_posts_df["Created_UTC"].idxmax()])
-                st.write("**Oldest Post:**", df_cleaned.loc[all_posts_df["Created_UTC"].idxmin()])
+                # Sentiment & Emotion Distribution
+                st.subheader("Sentiment & Emotion Distribution")
+                sentiment_dist = df["Sentiment"].value_counts()
+                emotion_dist = df["Emotion"].value_counts()
+                col1, col2 = st.columns(2)
+                col1.bar_chart(sentiment_dist)
+                col2.bar_chart(emotion_dist)
 
                 # Heatmap of Sentiment vs Emotion
-                st.subheader("Heatmap of Sentiment vs Emotion")
-                generate_heatmap(st.session_state.post_data)
+                st.subheader("Heatmap: Sentiment vs Emotion")
+                heatmap_data = df.pivot_table(index="Sentiment", columns="Emotion", aggfunc="size", fill_value=0)
+                plt.figure(figsize=(10, 6))
+                sns.heatmap(heatmap_data, annot=True, fmt="d", cmap="coolwarm")
+                st.pyplot(plt)
 
-                # 1. Sentiment and Emotion Distribution by Topic
-                st.subheader("Sentiment and Emotion Distribution by Topic")
-                if not df_cleaned.empty:
-                    sentiment_emotion_dist = df_cleaned.groupby(["Sentiment", "Emotion"]).size().reset_index(name="Count")
-                    fig = px.bar(sentiment_emotion_dist, x="Sentiment", y="Count", color="Emotion", title="Sentiment and Emotion Distribution by Topic")
-                    st.plotly_chart(fig, use_container_width=True)
+                # Topic Modeling with BERTopic
+                st.subheader("Thematic Analysis Using BERTopic")
+                topic_model = BERTopic()
+                topics, _ = topic_model.fit_transform(df["Body"].dropna().tolist())
+                df["Topic"] = topics
+                topic_counts = pd.Series(topics).value_counts()
+                fig = px.bar(topic_counts, x=topic_counts.index, y=topic_counts.values, title="Topic Distribution")
+                st.plotly_chart(fig)
 
-                # 2. Struggles Word Cloud for Siblings
-                if not st.session_state.df_cleaned.empty:
-                    st.subheader("Struggles Word Cloud")
-                    relevant_text = " ".join(
-                        st.session_state.df_cleaned["Body"].dropna().tolist()
-                    )
-                    struggle_words_only = " ".join([word for word in relevant_text.split() if word.lower() in struggle_keywords])
-                    create_wordcloud(struggle_words_only, "Struggles Word Cloud")
+                # Sentiment Over Time
+                st.subheader("Sentiment Trends Over Time")
+                df["Created_UTC"] = pd.to_datetime(df["Created_UTC"])
+                sentiment_trends = df.groupby([df["Created_UTC"].dt.to_period("M"), "Sentiment"]).size().unstack()
+                sentiment_trends.plot(kind="line", figsize=(10, 5))
+                plt.title("Sentiment Trends Over Time")
+                plt.xlabel("Month")
+                plt.ylabel("Count")
+                st.pyplot(plt)
 
+                # Most Discussed Subreddits
+                st.subheader("Top 10 Most Discussed Subreddits")
+                subreddit_counts = df["Subreddit"].value_counts().head(10)
+                fig = px.bar(subreddit_counts, x=subreddit_counts.index, y=subreddit_counts.values, title="Most Active Subreddits")
+                st.plotly_chart(fig)
 
-                # 4. Most Discussed Subreddits
-                st.subheader("Most Discussed Subreddits")
-                if not df_cleaned.empty:
-                    subreddit_count = df_cleaned["Subreddit"].value_counts().head(10).reset_index()
-                    subreddit_count.columns = ["Subreddit", "Count"]
-                    fig = px.bar(subreddit_count, x="Subreddit", y="Count", title="Most Discussed Subreddits")
-                    st.plotly_chart(fig, use_container_width=True)
-           
-           
-                st.subheader("Sentiment Distribution by Subreddit")       
-                if not st.session_state.df_cleaned.empty:
-                    plot_sentiment_by_subreddit(st.session_state.df_cleaned)
-                   
-                st.subheader("Emotion Radar Chart")               
-                if not st.session_state.df_cleaned.empty:
-                    plot_emotion_radar(st.session_state.df_cleaned)
-
-
-# **🔹 Upload Processed CSV from Colab**
-uploaded_file = st.file_uploader("Upload Processed Data from Colab", type=["csv"])
-if uploaded_file:
-    df_cleaned = pd.read_csv(uploaded_file)	
-    st.session_state.cleaned_data = df_cleaned
-    st.write("Processed Data from Colab:")
-    st.dataframe(df_cleaned)
-    st.sidebar.download_button("Download Processed Data", df_cleaned.to_csv(index=False), "final_filtered_reddit_data.csv")
-
-
-                
+                            
 
     # Download buttons
-    # Download Relevant Posts
-    if not st.session_state.post_data.empty:
-        st.sidebar.download_button(
-            "Download Relevant Posts",
-            st.session_state.post_data.to_csv(index=False),
-            file_name="relevant_posts.csv",
-            key="download_relevant_posts"  # Unique key for relevant posts
-        )
+
     # Download All Posts
-    if not st.session_state.all_posts.empty:
+    if not st.session_state.cleaned_data.empty:
         st.sidebar.download_button(
-            "Download All Posts",
+            "Download Cleaned data",
             st.session_state.all_posts.to_csv(index=False),
             file_name="all_posts.csv",
             key="download_all_posts"  # Unique key for all posts
