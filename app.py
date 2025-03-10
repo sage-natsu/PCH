@@ -518,7 +518,7 @@ def main():
     all_posts_df = pd.DataFrame()
 	# Ensure session state variables exist
     if "all_posts_df" not in st.session_state:
-    st.session_state.all_posts_df = pd.DataFrame()
+        st.session_state.all_posts_df = pd.DataFrame()
 
 
 
