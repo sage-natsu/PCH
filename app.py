@@ -478,6 +478,15 @@ def main():
     st.title("The Sibling Project: Reddit Data Analysis Dashboard")
     df_cleaned = pd.DataFrame()
 
+# Initialize session state variables if not present
+    if "cleaned_data" not in st.session_state:
+        st.session_state.cleaned_data = pd.DataFrame()	
+ # Ensure session state variables exist
+    if "data_uploaded" not in st.session_state:
+        st.session_state.data_uploaded = False  # Default to False
+	    
+	
+
     # Sidebar filter inputs
     st.sidebar.header("Filters and Configuration")
     selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
@@ -564,20 +573,24 @@ def main():
                 uploaded_file = st.file_uploader("Upload Processed CSV", type=["csv"])
 				
 
-                if uploaded_file:
-                    df_cleaned = pd.read_csv(uploaded_file)
-                    st.session_state.cleaned_data = df_cleaned                    # Store cleaned data in session state
-                    st.session_state.data_uploaded = True
-                    st.success("✅ Processed data successfully uploaded!")
-                    st.write("Processed Data from Colab:")
-                    st.dataframe(st.session_state.cleaned_data)
+		if uploaded_file:
+		    df_cleaned = pd.read_csv(uploaded_file)
+		    
+		    if df_cleaned.empty:
+		        st.error("❌ Uploaded CSV is empty! Please check your file.")
+		    else:
+		        st.session_state.cleaned_data = df_cleaned
+		        st.session_state.data_uploaded = True
+		        st.success("✅ Processed data successfully uploaded!")
+		        st.write("Processed Data from Colab:")
+		        st.dataframe(st.session_state.cleaned_data)
 
                     # Keep the processed data download option available
                     st.sidebar.download_button(
                         "Download Processed Data",
                         st.session_state.cleaned_data.to_csv(index=False),
                         "final_filtered_reddit_data.csv",
-                        key="download_processed_data"
+                        key="download_cleaned_data"
                     )
 
     
