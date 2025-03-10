@@ -516,6 +516,11 @@ def main():
     if "comments_data" not in st.session_state:
         st.session_state.comments_data = pd.DataFrame()
     all_posts_df = pd.DataFrame()
+	# Ensure session state variables exist
+    if "all_posts_df" not in st.session_state:
+    st.session_state.all_posts_df = pd.DataFrame()
+
+
 
 
     # Fetch Data
@@ -548,7 +553,7 @@ def main():
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts_df.to_csv(index=False), "raw_reddit_data.csv")
+                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts.to_csv(index=False), "raw_reddit_data.csv")
                 colab_url = "https://colab.research.google.com/drive/1GMpH4iE0l54fIEchsM50EVb0pJJFdOy8"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
 
