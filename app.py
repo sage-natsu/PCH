@@ -559,10 +559,10 @@ def main():
                 if uploaded_file:
                     df_cleaned = pd.read_csv(uploaded_file)
                     st.session_state.cleaned_data = df_cleaned  # Store cleaned data in session state
-					st.write("Processed Data from Colab:")
+		    st.write("Processed Data from Colab:")
                     st.success("✅ Processed data successfully uploaded!")
-				    st.dataframe(df_cleaned)
-					st.sidebar.download_button("Download Processed Data", df_cleaned.to_csv(index=False), "final_filtered_reddit_data.csv")
+	            st.dataframe(df_cleaned)
+	            st.sidebar.download_button("Download Processed Data", df_cleaned.to_csv(index=False), "final_filtered_reddit_data.csv")
     
 
                 # Word Cloud for Titles & Bodies
