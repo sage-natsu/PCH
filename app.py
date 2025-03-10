@@ -548,7 +548,7 @@ def main():
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-                st.sidebar.download_button("Download Raw Data", all_posts_df.to_csv(index=False), "raw_reddit_data.csv")
+                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts_df.to_csv(index=False), "raw_reddit_data.csv")
                 colab_url = "https://colab.research.google.com/drive/1GMpH4iE0l54fIEchsM50EVb0pJJFdOy8"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
 
@@ -561,37 +561,50 @@ def main():
 
                 if uploaded_file:
                     df_cleaned = pd.read_csv(uploaded_file)
-                    st.session_state.cleaned_data = df_cleaned  # Store cleaned data in session state
-                    st.write("Processed Data from Colab:")
+                    st.session_state.cleaned_data = df_cleaned                    # Store cleaned data in session state
+                    st.session_state.data_uploaded = True
                     st.success("✅ Processed data successfully uploaded!")
-                    st.dataframe(df_cleaned)
-                    st.sidebar.download_button("Download Processed Data", df_cleaned.to_csv(index=False), "final_filtered_reddit_data.csv")
-    
+                    st.write("Processed Data from Colab:")
+                    st.dataframe(st.session_state.cleaned_data)
 
+                    # Keep the processed data download option available
+                    st.sidebar.download_button(
+                        "Download Processed Data",
+                        st.session_state.cleaned_data.to_csv(index=False),
+                        "final_filtered_reddit_data.csv",
+                        key="download_processed_data"
+                    )
+
+    
+                # ✅ Keep UI Visible After Uploading Cleaned Data
+                if st.session_state.data_uploaded:
+                    st.subheader("Cleaned Data Overview")
+                    st.dataframe(st.session_state.cleaned_data)
+    
                 # Word Cloud for Titles & Bodies
                 st.subheader("Word Cloud of Post Titles")
-                wordcloud = WordCloud(background_color="white").generate(" ".join(df["Title"].dropna()))
+                wordcloud = WordCloud(background_color="white").generate(" ".join(df_cleaned["Title"].dropna()))
                 plt.imshow(wordcloud, interpolation="bilinear")
                 plt.axis("off")
                 st.pyplot(plt)
 
                 st.subheader("Word Cloud of Post Content")
-                wordcloud_body = WordCloud(background_color="white").generate(" ".join(df["Body"].dropna()))
+                wordcloud_body = WordCloud(background_color="white").generate(" ".join(df_cleaned["Body"].dropna()))
                 plt.imshow(wordcloud_body, interpolation="bilinear")
                 plt.axis("off")
                 st.pyplot(plt)
 
                 # Sentiment & Emotion Distribution
                 st.subheader("Sentiment & Emotion Distribution")
-                sentiment_dist = df["Sentiment"].value_counts()
-                emotion_dist = df["Emotion"].value_counts()
+                sentiment_dist = df_cleaned["Sentiment"].value_counts()
+                emotion_dist = df_cleaned["Emotion"].value_counts()
                 col1, col2 = st.columns(2)
                 col1.bar_chart(sentiment_dist)
                 col2.bar_chart(emotion_dist)
 
                 # Heatmap of Sentiment vs Emotion
                 st.subheader("Heatmap: Sentiment vs Emotion")
-                heatmap_data = df.pivot_table(index="Sentiment", columns="Emotion", aggfunc="size", fill_value=0)
+                heatmap_data = df_cleaned.pivot_table(index="Sentiment", columns="Emotion", aggfunc="size", fill_value=0)
                 plt.figure(figsize=(10, 6))
                 sns.heatmap(heatmap_data, annot=True, fmt="d", cmap="coolwarm")
                 st.pyplot(plt)
@@ -599,16 +612,16 @@ def main():
                 # Topic Modeling with BERTopic
                 st.subheader("Thematic Analysis Using BERTopic")
                 topic_model = BERTopic()
-                topics, _ = topic_model.fit_transform(df["Body"].dropna().tolist())
-                df["Topic"] = topics
+                topics, _ = topic_model.fit_transform(df_cleaned["Body"].dropna().tolist())
+                df_cleaned["Topic"] = topics
                 topic_counts = pd.Series(topics).value_counts()
                 fig = px.bar(topic_counts, x=topic_counts.index, y=topic_counts.values, title="Topic Distribution")
                 st.plotly_chart(fig)
 
                 # Sentiment Over Time
                 st.subheader("Sentiment Trends Over Time")
-                df["Created_UTC"] = pd.to_datetime(df["Created_UTC"])
-                sentiment_trends = df.groupby([df["Created_UTC"].dt.to_period("M"), "Sentiment"]).size().unstack()
+                df_cleaned["Created_UTC"] = pd.to_datetime(df_cleaned["Created_UTC"])
+                sentiment_trends = df_cleaned.groupby([df_cleaned["Created_UTC"].dt.to_period("M"), "Sentiment"]).size().unstack()
                 sentiment_trends.plot(kind="line", figsize=(10, 5))
                 plt.title("Sentiment Trends Over Time")
                 plt.xlabel("Month")
@@ -617,7 +630,7 @@ def main():
 
                 # Most Discussed Subreddits
                 st.subheader("Top 10 Most Discussed Subreddits")
-                subreddit_counts = df["Subreddit"].value_counts().head(10)
+                subreddit_counts = df_cleaned["Subreddit"].value_counts().head(10)
                 fig = px.bar(subreddit_counts, x=subreddit_counts.index, y=subreddit_counts.values, title="Most Active Subreddits")
                 st.plotly_chart(fig)
 
