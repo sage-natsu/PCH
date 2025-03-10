@@ -468,6 +468,9 @@ def plot_sentiment_by_subreddit(df):
 def cached_fetch_data(queries, start_date_utc, end_date_utc, limit_per_query, subreddit):
     """Cache fetched Reddit posts to avoid duplicate fetching."""
     return asyncio.run(fetch_praw_data(queries, start_date_utc, end_date_utc, limit_per_query, subreddit))
+# Initialize session state variables if not present
+if "cleaned_data" not in st.session_state:
+    st.session_state.cleaned_data = pd.DataFrame()
 
 
 # Main Streamlit app
