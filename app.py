@@ -573,7 +573,7 @@ def main():
                 uploaded_file = st.file_uploader("Upload Processed CSV", type=["csv"])
 				
 
-		if uploaded_file:
+                if uploaded_file:
 		    df_cleaned = pd.read_csv(uploaded_file)
 		    
 		    if df_cleaned.empty:
