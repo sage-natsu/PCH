@@ -581,7 +581,7 @@ def main():
                     else:
                         st.session_state.cleaned_data = df_cleaned
                         st.session_state.data_uploaded = True
-		        st.success("✅ Processed data successfully uploaded!")
+                        st.success("✅ Processed data successfully uploaded!")
                         st.write("Processed Data from Colab:")
                         st.dataframe(st.session_state.cleaned_data)
 
