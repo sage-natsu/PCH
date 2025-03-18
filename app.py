@@ -542,7 +542,7 @@ def main():
         with st.spinner("Fetching data... Please wait."):
             start_time = time.time()  # Start the timer	   
             praw_df = cached_fetch_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter)
-        # ✅ Apply ZSL Filtering **AFTER** Fetching
+        
             all_posts_df = praw_df
 
             end_time = time.time()  # End the timer
@@ -606,35 +606,7 @@ def main():
                 plt.axis("off")
                 st.pyplot(plt)
 
-                st.subheader("Word Cloud of Post Content")
-                wordcloud_body = WordCloud(background_color="white").generate(" ".join(df_cleaned["Body"].dropna()))
-                plt.imshow(wordcloud_body, interpolation="bilinear")
-                plt.axis("off")
-                st.pyplot(plt)
-
-                # Sentiment & Emotion Distribution
-                st.subheader("Sentiment & Emotion Distribution")
-                sentiment_dist = df_cleaned["Sentiment"].value_counts()
-                emotion_dist = df_cleaned["Emotion"].value_counts()
-                col1, col2 = st.columns(2)
-                col1.bar_chart(sentiment_dist)
-                col2.bar_chart(emotion_dist)
-
-                # Heatmap of Sentiment vs Emotion
-                st.subheader("Heatmap: Sentiment vs Emotion")
-                heatmap_data = df_cleaned.pivot_table(index="Sentiment", columns="Emotion", aggfunc="size", fill_value=0)
-                plt.figure(figsize=(10, 6))
-                sns.heatmap(heatmap_data, annot=True, fmt="d", cmap="coolwarm")
-                st.pyplot(plt)
-
-                # Topic Modeling with BERTopic
-                st.subheader("Thematic Analysis Using BERTopic")
-                topic_model = BERTopic()
-                topics, _ = topic_model.fit_transform(df_cleaned["Body"].dropna().tolist())
-                df_cleaned["Topic"] = topics
-                topic_counts = pd.Series(topics).value_counts()
-                fig = px.bar(topic_counts, x=topic_counts.index, y=topic_counts.values, title="Topic Distribution")
-                st.plotly_chart(fig)
+               
 
                 # Sentiment Over Time
                 st.subheader("Sentiment Trends Over Time")
@@ -646,13 +618,9 @@ def main():
                 plt.ylabel("Count")
                 st.pyplot(plt)
 
-                # Most Discussed Subreddits
-                st.subheader("Top 10 Most Discussed Subreddits")
-                subreddit_counts = df_cleaned["Subreddit"].value_counts().head(10)
-                fig = px.bar(subreddit_counts, x=subreddit_counts.index, y=subreddit_counts.values, title="Most Active Subreddits")
-                st.plotly_chart(fig)
+   
 
-                            
+                         
 
     # Download buttons
 
