@@ -250,7 +250,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                     submission = await reddit.submission(id=submission.id)  # Refetch full post
                     full_text = submission.selftext if submission.is_self else submission.url
                 
-		sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + full_text)
+	        sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + full_text)
 
 
                 # ✅ Prepare the post data with mandatory fields
