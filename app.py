@@ -306,7 +306,7 @@ async def fetch_sibling_subreddits(limit=50):
     """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
     sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport", "SpecialNeedsSiblings"
+        "GlassChildren", "AutisticSiblings", "SiblingSupport", "SpecialNeedsSiblings","DisabledSiblings"
     ]
     
     reddit = asyncpraw.Reddit(
