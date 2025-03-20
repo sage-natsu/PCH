@@ -568,11 +568,11 @@ def main():
 
 
 		# 🔹 Upload Processed CSV from Google Colab
-		st.subheader("Upload Processed Data from Colab")
-		uploaded_file = st.file_uploader("Upload Processed CSV", type=["csv"])
+                st.subheader("Upload Processed Data from Colab")
+                uploaded_file = st.file_uploader("Upload Processed CSV", type=["csv"])
 		
 		# ✅ Ensure uploaded file is processed
-		if uploaded_file is not None:
+                if uploaded_file is not None:
 		    try:
 		        df_cleaned = pd.read_csv(uploaded_file)
 		
