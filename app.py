@@ -584,7 +584,7 @@ def main():
 
 
            		    # ✅ Debug: Print Column Names and Sample Rows
-            		    st.write("🔍 Debugging: CSV Columns Detected:")
+                            st.write("🔍 Debugging: CSV Columns Detected:")
                             st.write(df_cleaned.columns.tolist())
 
 				
