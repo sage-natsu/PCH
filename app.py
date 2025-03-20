@@ -595,8 +595,8 @@ def main():
                                 key="download_cleaned_data"
 		            )
 		
-                     except Exception as e:
-                                st.error(f"⚠️ Error processing the uploaded file: {e}")
+                    except Exception as e:
+                        st.error(f"⚠️ Error processing the uploaded file: {e}")
 
 
     
