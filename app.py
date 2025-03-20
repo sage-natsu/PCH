@@ -581,20 +581,28 @@ def main():
                         else:
                             st.session_state.cleaned_data = df_cleaned  # ✅ Store in session state
                             st.session_state.data_uploaded = True
+
+
+           		    # ✅ Debug: Print Column Names and Sample Rows
+            		    st.write("🔍 Debugging: CSV Columns Detected:")
+                            st.write(df_cleaned.columns.tolist())
+
+				
                             st.success("✅ Processed data successfully uploaded!")
 		
 		            # ✅ Display the dataframe correctly
                             st.write("### Processed Data from Colab:")
-                            st.dataframe(st.session_state.cleaned_data)
-		
+                            st.dataframe(cleaned_data)
+		            
 		            # ✅ Add Download Button for Processed Data
                             st.sidebar.download_button(
                                 "Download Processed Data",
-                                st.session_state.cleaned_data.to_csv(index=False),
+                                df_cleaned.to_csv(index=False),
                                 "final_filtered_reddit_data.csv",
                                 key="download_cleaned_data"
 		            )
-		
+		            # ✅ Force UI refresh to display updated data
+                           st.experimental_rerun()
                     except Exception as e:
                         st.error(f"⚠️ Error processing the uploaded file: {e}")
 
