@@ -590,9 +590,9 @@ def main():
 		            # ✅ Add Download Button for Processed Data
                             st.sidebar.download_button(
                                 "Download Processed Data",
-                                 st.session_state.cleaned_data.to_csv(index=False),
-                                 final_filtered_reddit_data.csv",
-                                 key="download_cleaned_data"
+                                st.session_state.cleaned_data.to_csv(index=False),
+                                "final_filtered_reddit_data.csv",
+                                key="download_cleaned_data"
 		            )
 		
 		    except Exception as e:
