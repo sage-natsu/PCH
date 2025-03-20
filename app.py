@@ -602,7 +602,7 @@ def main():
                                 key="download_cleaned_data"
 		            )
 		            # ✅ Force UI refresh to display updated data
-                           st.experimental_rerun()
+                            st.experimental_rerun()
                     except Exception as e:
                         st.error(f"⚠️ Error processing the uploaded file: {e}")
 
