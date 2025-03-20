@@ -240,22 +240,13 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
 
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
-                # ✅ Fetch full-text body if it's a link post
-                if submission.is_self:
-                    full_text = submission.selftext  # Normal text post
-                else:
-                    full_text = submission.url  # Link post, store URL
-	        # ✅ Fetch full post body if truncated
-                if full_text and full_text.endswith("..."):
-                    submission = await reddit.submission(id=submission.id)  # Refetch full post
-                    full_text = submission.selftext if submission.is_self else submission.url;                                                                                                                                                                                                                                                                                                                                                                                                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + full_text)
-
+                sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " +  submission.selftext)
 
                 # ✅ Prepare the post data with mandatory fields
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
-                    "Body":  full_text,
+                    "Body":  submission.selftext,
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
                     "Author": str(submission.author),
