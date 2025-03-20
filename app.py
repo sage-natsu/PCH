@@ -567,30 +567,37 @@ def main():
 
 
 
-                # 🔹 Upload Processed CSV from Google Colab
-                st.subheader("Upload Processed Data from Colab")
-                uploaded_file = st.file_uploader("Upload Processed CSV", type=["csv"])
-				
+		# 🔹 Upload Processed CSV from Google Colab
+		st.subheader("Upload Processed Data from Colab")
+		uploaded_file = st.file_uploader("Upload Processed CSV", type=["csv"])
+		
+		# ✅ Ensure uploaded file is processed
+		if uploaded_file is not None:
+		    try:
+		        df_cleaned = pd.read_csv(uploaded_file)
+		
+		        if df_cleaned.empty:
+		            st.error("❌ Uploaded CSV is empty! Please check your file.")
+		        else:
+		            st.session_state.cleaned_data = df_cleaned  # ✅ Store in session state
+		            st.session_state.data_uploaded = True
+		            st.success("✅ Processed data successfully uploaded!")
+		
+		            # ✅ Display the dataframe correctly
+		            st.write("### Processed Data from Colab:")
+		            st.dataframe(st.session_state.cleaned_data)
+		
+		            # ✅ Add Download Button for Processed Data
+		            st.sidebar.download_button(
+		                "Download Processed Data",
+		                st.session_state.cleaned_data.to_csv(index=False),
+		                "final_filtered_reddit_data.csv",
+		                key="download_cleaned_data"
+		            )
+		
+		    except Exception as e:
+		        st.error(f"⚠️ Error processing the uploaded file: {e}")
 
-                if uploaded_file:
-                    df_cleaned = pd.read_csv(uploaded_file)
-		    
-                    if df_cleaned.empty:
-                        st.error("❌ Uploaded CSV is empty! Please check your file.")
-                    else:
-                        st.session_state.cleaned_data = df_cleaned
-                        st.session_state.data_uploaded = True
-                        st.success("✅ Processed data successfully uploaded!")
-                        st.write("Processed Data from Colab:")
-                        st.dataframe(st.session_state.cleaned_data)
-
-                    # Keep the processed data download option available
-                    st.sidebar.download_button(
-                        "Download Processed Data",
-                        st.session_state.cleaned_data.to_csv(index=False),
-                        "final_filtered_reddit_data.csv",
-                        key="download_cleaned_data"
-                    )
 
     
                 # ✅ Keep UI Visible After Uploading Cleaned Data
