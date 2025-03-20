@@ -580,11 +580,11 @@ def main():
                             st.error("❌ Uploaded CSV is empty! Please check your file.")
                         else:
                             st.session_state.cleaned_data = df_cleaned  # ✅ Store in session state
-		            st.session_state.data_uploaded = True
-		            st.success("✅ Processed data successfully uploaded!")
+                            st.session_state.data_uploaded = True
+                            st.success("✅ Processed data successfully uploaded!")
 		
 		            # ✅ Display the dataframe correctly
-		            st.write("### Processed Data from Colab:")
+                           st.write("### Processed Data from Colab:")
 		            st.dataframe(st.session_state.cleaned_data)
 		
 		            # ✅ Add Download Button for Processed Data
