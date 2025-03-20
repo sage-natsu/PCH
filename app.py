@@ -584,8 +584,8 @@ def main():
                             st.success("✅ Processed data successfully uploaded!")
 		
 		            # ✅ Display the dataframe correctly
-                           st.write("### Processed Data from Colab:")
-		            st.dataframe(st.session_state.cleaned_data)
+                            st.write("### Processed Data from Colab:")
+                            st.dataframe(st.session_state.cleaned_data)
 		
 		            # ✅ Add Download Button for Processed Data
 		            st.sidebar.download_button(
