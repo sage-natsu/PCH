@@ -600,11 +600,6 @@ def main():
 
 
     
-                # ✅ Keep UI Visible After Uploading Cleaned Data
-                if st.session_state.data_uploaded:
-                    st.subheader("Cleaned Data Overview")
-                    st.dataframe(st.session_state.cleaned_data)
-    
                 # Word Cloud for Titles & Bodies
                 st.subheader("Word Cloud of Post Titles")
                 wordcloud = WordCloud(background_color="white").generate(" ".join(df_cleaned["Title"].dropna()))
