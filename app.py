@@ -575,7 +575,8 @@ def main():
                 if uploaded_file is not None:
                     try:
                         df_cleaned = pd.read_csv(uploaded_file)
-		        if df_cleaned.empty:
+		        
+                        if df_cleaned.empty:
                         st.error("❌ Uploaded CSV is empty! Please check your file.")
                         else:
                             st.session_state.cleaned_data = df_cleaned  # ✅ Store in session state
