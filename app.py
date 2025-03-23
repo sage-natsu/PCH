@@ -491,13 +491,13 @@ def main():
     # Select All option
     select_all_disability = st.sidebar.checkbox('Select All Disabilities', value=False)
     if select_all_disability:
-        selected_disabilities = disability_terms
+        selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms,default=disability_terms)
     else:
         selected_disabilities = st.sidebar.multiselect("Select Disability Terms", disability_terms)
 
     select_all_sibling = st.sidebar.checkbox('Select All Siblings', value=False)
     if select_all_sibling:
-        selected_siblings = sibling_terms
+        elected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms,default=sibling_terms)
     else:
         elected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
     start_date = st.sidebar.date_input("Start Date")
