@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+                                                              from datetime import datetime, timezone
 import subprocess
 import time  # Import the time module
 import sys
@@ -186,7 +186,7 @@ async def fetch_full_post_data(post_id):
             "Num_Comments": getattr(post, "num_comments", None),
             "Over_18": getattr(post, "over_18", None),
             "URL": getattr(post, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(post, "permalink") else None,
+            "Permalink": f"https://www.reddit.com{post.permalink}" if hasattr(post, "permalink") else None,
             "Upvote_Ratio": getattr(post, "upvote_ratio", None),
             "Pinned": getattr(post, "stickied", None),
             "Subreddit_Subscribers": getattr(post.subreddit, "subscribers", None),
