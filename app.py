@@ -185,7 +185,7 @@ async def fetch_full_post_data(post_id):
 
     try:
         # Corrected - Fetch the post using the correct method for asyncpraw
-        post = await reddit.submission(id=post_id)
+        post = await reddit.post(id=post_id)
 
         # Prepare the post data
         post_data = {
