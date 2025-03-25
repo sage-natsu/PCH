@@ -154,6 +154,58 @@ def filter_relevant_posts(df, batch_size=20):
     return df
 
 
+async def fetch_full_post_data(post_id):
+    """Fetch the full post content, ensuring no truncation and include all attributes."""
+    reddit = asyncpraw.Reddit(
+        client_id=REDDIT_CLIENT_ID,
+        client_secret=REDDIT_CLIENT_SECRET,
+        user_agent=REDDIT_USER_AGENT,
+    )
+
+    try:
+        post = await reddit.submission(id=post_id)
+
+        # If the post is too long and is truncated, load the full content
+        post_data = {
+            "Post ID": post.id,
+            "Title": post.title,
+            "Body": post.selftext if len(post.selftext) < 1000 else "Text too long to display fully",
+            "Upvotes": post.score,
+            "Subreddit": post.subreddit.display_name,
+            "Author": str(post.author),
+            "Created_UTC": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+        # Fetch the full content if the body is large
+        if len(post.selftext) >= 1000:  # Check if it's truncated
+            await post.load()  # Fetch the full content
+            post_data["Body"] = post.selftext  # Update with full content
+
+        # Add optional attributes if available
+        optional_attributes = {
+            "Num_Comments": getattr(post, "num_comments", None),
+            "Over_18": getattr(post, "over_18", None),
+            "URL": getattr(post, "url", None),
+            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(post, "permalink") else None,
+            "Upvote_Ratio": getattr(post, "upvote_ratio", None),
+            "Pinned": getattr(post, "stickied", None),
+            "Subreddit_Subscribers": getattr(post.subreddit, "subscribers", None),
+            "Subreddit_Type": getattr(post.subreddit, "subreddit_type", None),
+            "Total_Awards_Received": getattr(post, "total_awards_received", None),
+            "Gilded": getattr(post, "gilded", None),
+            "Edited": post.edited if post.edited else None
+        }
+
+        # Add optional attributes only if they are not None
+        for key, value in optional_attributes.items():
+            if value is not None:
+                post_data[key] = value
+
+        return post_data
+
+    except Exception as e:
+        st.error(f"Error fetching full post data: {e}")
+        return None
 
 
 # Function for sentiment and emotion analysis
@@ -242,6 +294,14 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                     continue
                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " +  submission.selftext)
 
+
+                # Fetch the full post content using the updated method
+                post_data = await fetch_full_post_data(submission.id)
+                if post_data:
+                    query_data.append(post_data)
+
+
+		    
                 # ✅ Prepare the post data with mandatory fields
                 post_data = {
                     "Post ID": submission.id,
@@ -299,7 +359,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
         data.extend(sibling_posts)
 
     # ✅ Ensure at least an empty DataFrame is returned
-    return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC"])
+    return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
 
 async def fetch_sibling_subreddits(limit=50):
     """Fetch latest posts from valid sibling support subreddits."""
