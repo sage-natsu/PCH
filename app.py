@@ -184,32 +184,35 @@ async def fetch_full_post_data(post_id):
     )
 
     try:
-        # Fetch the submission using the post ID
-        post = reddit.submission(id=post_id)
+        # Corrected - Fetch the post using the correct method for asyncpraw
+        post = await reddit.submission(id=post_id)
 
-        # Ensure the full content is loaded, even if it's long
-        await post.load()  # This ensures the full content is fetched
-
+        # Prepare the post data
         post_data = {
             "Post ID": post.id,
             "Title": post.title,
-            "Body": post.selftext if post.selftext else "No body content",  # Handle empty post bodies
+            "Body": post.selftext if len(post.selftext) < 1000 else "Text too long to display fully",
             "Upvotes": post.score,
-            "Subreddit": post.subreddit.display_name if hasattr(post, 'subreddit') else "Unknown Subreddit",
-            "Author": str(post.author) if post.author else "Unknown Author",
+            "Subreddit": post.subreddit.display_name,
+            "Author": str(post.author),
             "Created_UTC": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
         }
+
+        # If the body is too long, load the full content
+        if len(post.selftext) >= 1000:  # Check if it's truncated
+            await post.load()  # Fetch the full content
+            post_data["Body"] = post.selftext  # Update with full content
 
         # Add optional attributes if available
         optional_attributes = {
             "Num_Comments": getattr(post, "num_comments", None),
             "Over_18": getattr(post, "over_18", None),
             "URL": getattr(post, "url", None),
-            "Permalink": f"https://www.reddit.com{post.permalink}" if hasattr(post, "permalink") else None,
+            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(post, "permalink") else None,
             "Upvote_Ratio": getattr(post, "upvote_ratio", None),
             "Pinned": getattr(post, "stickied", None),
-            "Subreddit_Subscribers": getattr(post.subreddit, "subscribers", None) if hasattr(post, 'subreddit') else None,
-            "Subreddit_Type": getattr(post.subreddit, "subreddit_type", None) if hasattr(post, 'subreddit') else None,
+            "Subreddit_Subscribers": getattr(post.subreddit, "subscribers", None),
+            "Subreddit_Type": getattr(post.subreddit, "subreddit_type", None),
             "Total_Awards_Received": getattr(post, "total_awards_received", None),
             "Gilded": getattr(post, "gilded", None),
             "Edited": post.edited if post.edited else None
