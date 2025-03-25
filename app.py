@@ -185,30 +185,27 @@ async def fetch_full_post_data(post_id):
 
     try:
         # Fetch the submission using the post ID
-        post = await reddit.submission(id=post_id)
+        post = reddit.submission(id=post_id)
 
-        # If the post is too long and is truncated, load the full content
+        # Ensure the full content is loaded, even if it's long
+        await post.load()  # This ensures the full content is fetched
+
         post_data = {
             "Post ID": post.id,
             "Title": post.title,
-            "Body": post.selftext if len(post.selftext) < 1000 else "Text too long to display fully",  # Check length of body
+            "Body": post.selftext if post.selftext else "No body content",  # Handle empty post bodies
             "Upvotes": post.score,
-            "Subreddit": post.subreddit.display_name if hasattr(post, 'subreddit') else "Unknown Subreddit",  # Access subreddit correctly
-            "Author": str(post.author) if post.author else "Unknown Author",  # Handle possible None value for author
+            "Subreddit": post.subreddit.display_name if hasattr(post, 'subreddit') else "Unknown Subreddit",
+            "Author": str(post.author) if post.author else "Unknown Author",
             "Created_UTC": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
         }
-
-        # Fetch the full content if the body is large
-        if len(post.selftext) >= 1000:  # Check if it's truncated
-            await post.load()  # Fetch the full content
-            post_data["Body"] = post.selftext  # Update with full content
 
         # Add optional attributes if available
         optional_attributes = {
             "Num_Comments": getattr(post, "num_comments", None),
             "Over_18": getattr(post, "over_18", None),
             "URL": getattr(post, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(post, "permalink") else None,
+            "Permalink": f"https://www.reddit.com{post.permalink}" if hasattr(post, "permalink") else None,
             "Upvote_Ratio": getattr(post, "upvote_ratio", None),
             "Pinned": getattr(post, "stickied", None),
             "Subreddit_Subscribers": getattr(post.subreddit, "subscribers", None) if hasattr(post, 'subreddit') else None,
