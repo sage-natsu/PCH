@@ -175,59 +175,7 @@ def analyze_sentiment_and_emotion(text):
     )
     return sentiment, emotion
     
-async def fetch_full_post_data(post_id):
-    """Fetch the full post content, ensuring no truncation and include all attributes."""
-    reddit = asyncpraw.Reddit(
-        client_id=REDDIT_CLIENT_ID,
-        client_secret=REDDIT_CLIENT_SECRET,
-        user_agent=REDDIT_USER_AGENT,
-    )
 
-    try:
-        # Corrected - Fetch the post using the correct method for asyncpraw
-        post = await reddit.post(id=post_id)
-
-        # Prepare the post data
-        post_data = {
-            "Post ID": post.id,
-            "Title": post.title,
-            "Body": post.selftext if len(post.selftext) < 1000 else "Text too long to display fully",
-            "Upvotes": post.score,
-            "Subreddit": post.subreddit.display_name,
-            "Author": str(post.author),
-            "Created_UTC": datetime.utcfromtimestamp(post.created_utc).strftime("%Y-%m-%d %H:%M:%S"),
-        }
-
-        # If the body is too long, load the full content
-        if len(post.selftext) >= 1000:  # Check if it's truncated
-            await post.load()  # Fetch the full content
-            post_data["Body"] = post.selftext  # Update with full content
-
-        # Add optional attributes if available
-        optional_attributes = {
-            "Num_Comments": getattr(post, "num_comments", None),
-            "Over_18": getattr(post, "over_18", None),
-            "URL": getattr(post, "url", None),
-            "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(post, "permalink") else None,
-            "Upvote_Ratio": getattr(post, "upvote_ratio", None),
-            "Pinned": getattr(post, "stickied", None),
-            "Subreddit_Subscribers": getattr(post.subreddit, "subscribers", None),
-            "Subreddit_Type": getattr(post.subreddit, "subreddit_type", None),
-            "Total_Awards_Received": getattr(post, "total_awards_received", None),
-            "Gilded": getattr(post, "gilded", None),
-            "Edited": post.edited if post.edited else None
-        }
-
-        # Add optional attributes only if they are not None
-        for key, value in optional_attributes.items():
-            if value is not None:
-                post_data[key] = value
-
-        return post_data
-
-    except Exception as e:
-        st.error(f"Error fetching full post data: {e}")
-        return None
 
 
     
@@ -306,7 +254,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
-                    "Body":  submission.selftext,
+                    "Body": submission.selftext if len(submission.selftext) < 1000 else "Text too long to display fully",
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
                     "Author": str(submission.author),
@@ -314,6 +262,11 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                     "Sentiment": sentiment,
                     "Emotion": emotion,
                 }
+
+                # If the body is truncated (too long), fetch the full body
+                if len(submission.selftext) >= 1000:
+                    await submission.load()  # Fetch the full content
+                    post_data["Body"] = submission.selftext  # Update with full content
 
                 # ✅ Add optional attributes if available
                 optional_attributes = {
