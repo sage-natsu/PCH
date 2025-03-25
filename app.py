@@ -557,9 +557,9 @@ def main():
 
     select_all_sibling = st.sidebar.checkbox('Select All Siblings', value=False)
     if select_all_sibling:
-        elected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms,default=sibling_terms)
+        selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms,default=sibling_terms)
     else:
-        elected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
+        selected_siblings = st.sidebar.multiselect("Select Sibling Terms", sibling_terms)
     start_date = st.sidebar.date_input("Start Date")
     end_date = st.sidebar.date_input("End Date")
 
