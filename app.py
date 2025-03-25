@@ -242,13 +242,6 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                     continue
                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " +  submission.selftext)
 
-
-                # Fetch the full post content using the updated method
-                post_data = await fetch_full_post_data(submission.id)
-                if post_data:
-                    query_data.append(post_data)
-
-
 		    
                 # ✅ Prepare the post data with mandatory fields
                 post_data = {
