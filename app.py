@@ -67,17 +67,22 @@ REDDIT_USER_AGENT = "windows:SiblingsDataApp:v1.0 (by /u/Proper-Leading-4091)"
 
 # Define disability and sibling terms
 disability_terms = [
-    "22q11.2", "ADHD", "Attention Deficit Hyperactivity Disorder", "ADD", "Angelman", "Attention Deficit Disorder",
-    "Autism", "Autistic", "Asperger", "Aspergers", "Asperger's", "Aspie", "ASD", "CDKL5",
-    "Cerebral Palsy", "Cognitive delay", "Cognitively delayed", "Cornelia de Lange", "CP" , "Developmental Condition", "Developmental Delay","Developmental Disorder",
-    "Developmental Disability", "Disabled", "Disability", "Delayed", "Down Syndrome", "Down's Syndrome", "Downs Syndrome", "Epilepsy", "Epileptic",
-    "Fetal Alcohol", "Foetal Alcohol", "FAS", "FASD", "Fragile X", "Genetic condition", "Genetic Disorder", 
-     "Global Developmental Delay", "Intellectual Disability", "Intellectually disabled",
-     "Intellectual impairment", "MECP2", "Mental delay", "Mentally delayed", "Mentally impaired",
-     "Neurodivergent", "Neurodiverse", "Neurospicy", "Neurodevelopmental Condition", "NDC", "Neurodevelopmental Disorder", "Prader Willi",
-     "Prader-Willi", "Rett Syndrome", "Rett's Syndrome", "Retts Syndrome" , "Tourette’s", "Tourette", "Tourettes", 
-     "Tic Disorder", "Tics", "Williams Syndrome", "William Syndrome", "NDIS", "Hereditary"
-
+    "22q", "22q11.2", "ADD", "ADHD", "Angelman", "Angelmans", "ASD",
+    "Asperger", "Asperger’s", "Aspergers", "Aspie", "Attention deficit disorder",
+    "Attention deficit hyperactivity disorder", "AuADHD", "Autism", "Autistic",
+    "CDKL5", "Cerebral palsy", "CHARGE syndrome", "Chromosomal", "Cognitive delay",
+    "Cognitively delayed", "Cognitive impairment", "Cognitively impaired",
+    "Cornelia de Lange", "CP", "Developmental condition", "Developmental delay",
+    "Developmentally delayed", "Developmental disorder", "DiGeorge syndrome",
+    "Disabilities", "Disability", "Disabled", "Down syndrome", "Down’s  syndrome",
+    "Downs syndrome", "Epilepsy", "Epileptic", "FAS", "FASD", "Fetal alcohol",
+    "Foetal alcohol", "Fragile X", "GDD", "Genetic condition", "Genetic disorder",
+    "Hereditary", "Intellectual impairment", "MECP2", "Mental delay",
+    "Mentally delayed", "Mentally impaired", "Mental impairment", "NDC", "NDIS",
+    "Neurodevelopmental", "Neurodivergent", "Neurodiverse", "Neurospicy",
+    "Prader Willi", "Prader-Willi", "Rett syndrome", "Rett’s syndrome",
+    "Retts syndrome", "Tic disorder", "Tics", "Tourette", "Tourette’s",
+    "Tourettes", "Velocardiofacial syndrome", "William syndrome", "Williams syndrome"
 ]
 
 sibling_terms = [
