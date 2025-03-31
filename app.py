@@ -602,7 +602,7 @@ def main():
                             st.session_state.cleaned_data = df_cleaned  # ✅ Store in session state
                             st.session_state.data_uploaded = True
 
-
+xs
            		    # ✅ Debug: Print Column Names and Sample Rows
                             st.write("🔍 Debugging: CSV Columns Detected:")
                             st.write(df_cleaned.columns.tolist())
