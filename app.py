@@ -537,6 +537,9 @@ def main():
         st.session_state.post_data = pd.DataFrame()
     if "all_posts" not in st.session_state:
         st.session_state.all_posts = pd.DataFrame()
+    if "all_posts" not in st.session_state:
+        st.session_state["all_posts"] = pd.DataFrame()
+	    
     if "comments_data" not in st.session_state:
         st.session_state.comments_data = pd.DataFrame()
     all_posts_df = pd.DataFrame()
@@ -578,6 +581,7 @@ def main():
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
                 st.sidebar.download_button("Download Raw Data", st.session_state.all_posts.to_csv(index=False), "raw_reddit_data.csv")
+		 st.success("CSV downloaded! Now proceed to Colab.")    
                 colab_url = "https://colab.research.google.com/drive/1GMpH4iE0l54fIEchsM50EVb0pJJFdOy8"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
 
