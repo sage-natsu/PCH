@@ -110,55 +110,43 @@ zsl_labels = [
 
 ]
 
-# ✅ Function to Apply ZSL Filtering **AFTER** Fetching
-def filter_relevant_posts(df, batch_size=20):
-    """Batch process Zero-Shot Classification for CPU efficiency."""
-    if df.empty:
-        st.warning("Skipping Zero-Shot filtering: No posts.")
-        return df
+
+def filter_relevant_posts(df, sibling_terms, disability_terms, suicide_keywords, batch_size=20):
+    """Filter posts based on the presence of both sibling and disability terms in the combined title and body."""
     
-    if not zsl_labels:
-        st.error("Zero-shot labels missing. Skipping filtering.")
-        return df  
+    # Remove NaN and empty strings from title and body
+    df = df.dropna(subset=["Title", "Body"]).copy()  # Remove rows where either Title or Body is NaN
+    df = df[df["Title"].str.strip() != ""]
+    df = df[df["Body"].str.strip() != ""]  # Remove rows where Body is empty string
 
-    df = df.dropna(subset=["Body"]).copy()  # Remove NaN texts
-    df = df[df["Body"].str.strip() != ""]  # Remove empty strings
-    relevance_scores = []
+    filtered_posts = []
+    
+    for index, row in df.iterrows():
+        title = row['Title']
+        body = row['Body']
+        
+        # Combine both title and body for checking the terms
+        combined_text = (title + " " + body).lower()
 
-    try:
-        body_texts = df["Body"].tolist()
+        # Ensure both sibling and disability terms are present
+        sibling_found = any(term.lower() in combined_text for term in sibling_terms)
+        disability_found = any(term.lower() in combined_text for term in disability_terms)
 
-        # ✅ Ensure we have valid inputs
-        if not body_texts:
-            st.warning("No valid posts to process for Zero-Shot classification.")
-            return df
+        if sibling_found and disability_found:
+            # Check if suicide-related terms are present
+            if any(suicide_term in combined_text for suicide_term in suicide_keywords):
+                filtered_posts.append(row)
+    
+    return pd.DataFrame(filtered_posts)
 
-        # ✅ Process texts in small batches to prevent memory overload
-        for i in range(0, len(body_texts), batch_size):
-            batch = body_texts[i:i + batch_size]  # Get batch
-            
-            # ✅ Ensure batch is not empty before calling model
-            if not batch:
-                continue
 
-            batch_results = zsl_classifier(batch, zsl_labels, multi_label=True)  # Process batch
-            
-            # ✅ Extract highest score per post in batch
-            batch_scores = [max(result["scores"]) if result["scores"] else 0 for result in batch_results]
-            relevance_scores.extend(batch_scores)
-
-        # ✅ Ensure we have as many scores as rows in df
-        df["Relevance_Score"] = relevance_scores[:len(df)]
-        df = df[df["Relevance_Score"] > 0.35]  # Apply threshold
-
-    except Exception as e:
-        st.error(f"Zero-shot filtering failed: {e}")
-    df = df.astype({col: str for col in df.select_dtypes(include=["object"]).columns})  # Ensure object columns are strings
-    df = df.astype({col: int for col in df.select_dtypes(include=["int64"]).columns})  # Convert int64 to Python int
-
-    return df
-
+def check_combination(text, sibling_terms, disability_terms):
+    """Check if both sibling and disability terms are present in the text."""
+    sibling_found = any(term.lower() in text.lower() for term in sibling_terms)
+    disability_found = any(term.lower() in text.lower() for term in disability_terms)
+    return sibling_found and disability_found
 # Function for sentiment and emotion analysis
+
 def analyze_sentiment_and_emotion(text):
     if pd.isna(text) or not text.strip():
         return "Neutral", "Neutral"
@@ -662,7 +650,7 @@ def main():
     if not st.session_state.cleaned_data.empty:
         st.sidebar.download_button(
             "Download Cleaned data",
-            st.session_state.all_posts.to_csv(index=False),
+            st.session_state.all_posts.to_csv(index=False,encoding="utf-8"),
             file_name="all_posts.csv",
             key="download_all_posts"  # Unique key for all posts
         )
