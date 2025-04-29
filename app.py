@@ -98,53 +98,33 @@ struggle_keywords = [
 ]
 
 
-# ✅ Categories for Zero-Shot Filtering
-zsl_labels = [
-    # ✅ Existing labels
-    "Growing up with a disabled sibling",
-    "Supporting a disabled sibling",
-    "Challenges of having a neurodivergent sibling",
-    "Struggles of being a sibling to a special needs child",
-    "Emotional impact of sibling disability",
-    "Feeling neglected as a sibling of a special needs child"
-
-]
 
 
-def filter_relevant_posts(df, sibling_terms, disability_terms, suicide_keywords, batch_size=20):
-    """Filter posts based on the presence of both sibling and disability terms in the combined title and body."""
-    
-    # Remove NaN and empty strings from title and body
-    df = df.dropna(subset=["Title", "Body"]).copy()  # Remove rows where either Title or Body is NaN
+def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
+    """
+    Keep only those posts where at least one sibling term AND
+    at least one disability term appear anywhere in the title+body.
+    """
+
+    # 1) Drop any rows with missing or empty Title/Body
+    df = df.dropna(subset=["Title", "Body"]).copy()
     df = df[df["Title"].str.strip() != ""]
-    df = df[df["Body"].str.strip() != ""]  # Remove rows where Body is empty string
+    df = df[df["Body"].str.strip()  != ""]
 
-    filtered_posts = []
-    
-    for index, row in df.iterrows():
-        title = row['Title']
-        body = row['Body']
-        
-        # Combine both title and body for checking the terms
-        combined_text = (title + " " + body).lower()
+    filtered = []
+    for _, row in df.iterrows():
+        combined = (row["Title"] + " " + row["Body"]).lower()
 
-        # Ensure both sibling and disability terms are present
-        sibling_found = any(term.lower() in combined_text for term in sibling_terms)
-        disability_found = any(term.lower() in combined_text for term in disability_terms)
+        has_sib   = any(sib.lower() in combined for sib in   sibling_terms)
+        has_disab = any(dis.lower() in combined for dis in disability_terms)
 
-        if sibling_found and disability_found:
-            # Check if suicide-related terms are present
-            if any(suicide_term in combined_text for suicide_term in suicide_keywords):
-                filtered_posts.append(row)
-    
-    return pd.DataFrame(filtered_posts)
+        if has_sib and has_disab:
+            filtered.append(row)
+
+    return pd.DataFrame(filtered)
 
 
-def check_combination(text, sibling_terms, disability_terms):
-    """Check if both sibling and disability terms are present in the text."""
-    sibling_found = any(term.lower() in text.lower() for term in sibling_terms)
-    disability_found = any(term.lower() in text.lower() for term in disability_terms)
-    return sibling_found and disability_found
+
 # Function for sentiment and emotion analysis
 
 def analyze_sentiment_and_emotion(text):
@@ -555,6 +535,11 @@ def main():
             praw_df = cached_fetch_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter)
         
             all_posts_df = praw_df
+	    all_posts_df = filter_relevant_posts(
+            all_posts_df,
+            sibling_terms=selected_siblings,
+            disability_terms=selected_disabilities
+            )	
 
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
