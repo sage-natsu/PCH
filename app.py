@@ -534,12 +534,27 @@ def main():
             start_time = time.time()  # Start the timer	   
             praw_df = cached_fetch_data(queries, start_date_utc, end_date_utc, 50, subreddit_filter)
         
-            all_posts_df = praw_df
-	    all_posts_df = filter_relevant_posts(
-            all_posts_df,
-            sibling_terms=selected_siblings,
-            disability_terms=selected_disabilities
-            )	
+            # 🛠 carve-out: always keep any post from your official sibling-support subs
+            SIBLING_SUPPORT_SUBS = [
+            "GlassChildren",
+            "AutisticSiblings",
+            "SiblingSupport",
+            "SpecialNeedsSiblings",
+            "DisabledSiblings"
+             ]
+             sibling_only_df = praw_df[praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)].copy()
+
+             # 🛠 from all other subs, require at least one sib-term AND one disab-term
+             others_df = praw_df[~praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)].copy()
+             filtered_others = filter_relevant_posts(
+             others_df,
+             sibling_terms=selected_siblings,
+             disability_terms=selected_disabilities
+             )
+
+            # 🛠 stitch them back together
+            all_posts_df = pd.concat([sibling_only_df, filtered_others], ignore_index=True)
+	
 
             end_time = time.time()  # End the timer
             elapsed_time = end_time - start_time  # Calculate the elapsed time	
