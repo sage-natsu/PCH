@@ -588,7 +588,7 @@ def main():
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts.to_csv(index=False,encoding="utf-8"), "raw_reddit_data.csv")
+                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts.to_csv(index=False,encoding="utf-8-sig"), "raw_reddit_data.csv", mime="text/csv")
                 st.success("CSV downloaded! Now proceed to Colab.")    
                 colab_url = "https://colab.research.google.com/drive/1GMpH4iE0l54fIEchsM50EVb0pJJFdOy8"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
@@ -602,7 +602,7 @@ def main():
 		# ✅ Ensure uploaded file is processed
                 if uploaded_file is not None:
                     try:
-                        df_cleaned = pd.read_csv(uploaded_file)
+                        df_cleaned = pd.read_csv(uploaded_file,encoding="utf-8-sig")
 		        
                         if df_cleaned.empty:
                             st.error("❌ Uploaded CSV is empty! Please check your file.")
@@ -625,7 +625,7 @@ def main():
 		            # ✅ Add Download Button for Processed Data
                             st.sidebar.download_button(
                                 "Download Processed Data",
-                                df_cleaned.to_csv(index=False,encoding="utf-8"),
+                                df_cleaned.to_csv(index=False,encoding="utf-8-sig"),
                                 "final_filtered_reddit_data.csv",
                                 key="download_cleaned_data"
 		            )
