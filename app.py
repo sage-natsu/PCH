@@ -541,33 +541,33 @@ def main():
 
             # 1) Always keep anything from the official sibling‐support subs:
             SIBLING_SUPPORT_SUBS = {
-           "GlassChildren",
-           "AutisticSiblings",
-           "SiblingSupport",
-           "SpecialNeedsSiblings",
-           "DisabledSiblings"
-            }
-           mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
-           support_df = praw_df[mask_support].copy()
+            "GlassChildren",
+            "AutisticSiblings",
+            "SiblingSupport",
+            "SpecialNeedsSiblings",
+            "DisabledSiblings"
+             }
+             mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
+             support_df = praw_df[mask_support].copy()
 
-           # 2) From all _other_ subreddits, require at least one sib‐term AND one disab‐term
-           others = praw_df[~mask_support].copy()
+             # 2) From all _other_ subreddits, require at least one sib‐term AND one disab‐term
+             others = praw_df[~mask_support].copy()
            # build a lowercased “title + body” Series
-           combined = (others["Title"].fillna("") + " " + others["Body"].fillna("")).str.lower()
+             combined = (others["Title"].fillna("") + " " + others["Body"].fillna("")).str.lower()
 
            # sibling mask
-           sib_mask = combined.apply(
-               lambda text: any(sib.lower() in text for sib in selected_siblings)
+            sib_mask = combined.apply(
+                lambda text: any(sib.lower() in text for sib in selected_siblings)
            )
            # disability mask
-           dis_mask = combined.apply(
-               lambda text: any(dis.lower() in text for dis in selected_disabilities)
+            dis_mask = combined.apply(
+                lambda text: any(dis.lower() in text for dis in selected_disabilities)
            )
 
-           filtered_others = others[sib_mask & dis_mask]
+            filtered_others = others[sib_mask & dis_mask]
 
            # stitch them back together:
-           all_posts_df = pd.concat([support_df, filtered_others], ignore_index=True)
+            all_posts_df = pd.concat([support_df, filtered_others], ignore_index=True)
 
 	
 
