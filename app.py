@@ -588,7 +588,7 @@ def main():
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts.to_csv(index=False), "raw_reddit_data.csv")
+                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts.to_csv(index=False,encoding="utf-8"), "raw_reddit_data.csv")
                 st.success("CSV downloaded! Now proceed to Colab.")    
                 colab_url = "https://colab.research.google.com/drive/1GMpH4iE0l54fIEchsM50EVb0pJJFdOy8"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
@@ -625,7 +625,7 @@ def main():
 		            # ✅ Add Download Button for Processed Data
                             st.sidebar.download_button(
                                 "Download Processed Data",
-                                df_cleaned.to_csv(index=False),
+                                df_cleaned.to_csv(index=False,encoding="utf-8"),
                                 "final_filtered_reddit_data.csv",
                                 key="download_cleaned_data"
 		            )
