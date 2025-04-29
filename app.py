@@ -547,13 +547,13 @@ def main():
             "SpecialNeedsSiblings",
             "DisabledSiblings"
              }
-             mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
-             support_df = praw_df[mask_support].copy()
+            mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
+            support_df = praw_df[mask_support].copy()
 
              # 2) From all _other_ subreddits, require at least one sib‐term AND one disab‐term
-             others = praw_df[~mask_support].copy()
+            others = praw_df[~mask_support].copy()
            # build a lowercased “title + body” Series
-             combined = (others["Title"].fillna("") + " " + others["Body"].fillna("")).str.lower()
+            combined = (others["Title"].fillna("") + " " + others["Body"].fillna("")).str.lower()
 
            # sibling mask
             sib_mask = combined.apply(
