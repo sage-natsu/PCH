@@ -582,13 +582,33 @@ def main():
             if all_posts_df.empty:
                 st.warning("No posts found for the selected filters.")
             else:
-                # Save and display all posts
-                st.session_state.all_posts = all_posts_df
-                st.write(f"Total fetched records: {len(all_posts_df)}")
+                # 1) Fix garbled characters
+                import ftfy
+                all_posts_df["Title"] = all_posts_df["Title"].astype(str).map(ftfy.fix_text)
+                all_posts_df["Body"]  = all_posts_df["Body"].astype(str).map(ftfy.fix_text)
+
+
+                # 2) Ensure Created_UTC is datetime
+                all_posts_df["Created_UTC"] = pd.to_datetime(all_posts_df["Created_UTC"], errors="coerce")
+	        # 3) Sort by date and drop duplicate Title+Body, keeping the latest
+                all_posts_df = (
+                all_posts_df
+                .sort_values("Created_UTC")
+                .drop_duplicates(subset=["Title", "Body"], keep="last")
+                .reset_index(drop=True)
+                )    
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-                st.sidebar.download_button("Download Raw Data", st.session_state.all_posts.to_csv(index=False,encoding="utf-8-sig"), "raw_reddit_data.csv", mime="text/csv")
+                # 4) Now store and download the cleaned, deduped CSV
+                st.session_state.all_posts = all_posts_df
+                st.sidebar.download_button(
+                "Download Clean Raw Data",
+                st.session_state.all_posts.to_csv(index=False, encoding="utf-8-sig"),
+                "raw_reddit_data.csv",
+                mime="text/csv"
+                )
+        st.success("Cleaned & deduped CSV ready for download.")
                 st.success("CSV downloaded! Now proceed to Colab.")    
                 colab_url = "https://colab.research.google.com/drive/1GMpH4iE0l54fIEchsM50EVb0pJJFdOy8"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
