@@ -528,6 +528,33 @@ def main():
     if "all_posts_df" not in st.session_state:
         st.session_state.all_posts_df = pd.DataFrame()
 
+    import re
+
+    # 1a) exact‐case ADD
+    add_pattern = re.compile(r"\bADD\b")
+
+    # 1b) other disability terms (lowercased), including multi-word phrases
+    other_dis_terms = [d for d in selected_disabilities if d != "ADD"]
+    dis_patterns = [
+        re.compile(rf"\b{re.escape(d.lower())}\b") 
+        for d in other_dis_terms
+    ]
+
+    # 1c) sibling terms as whole words, case-insensitive
+    sib_patterns = [
+        re.compile(rf"\b{re.escape(s.lower())}\b", re.IGNORECASE)
+        for s in selected_siblings
+    ]
+
+    # Helper functions
+    def has_sibling(text: str) -> bool:
+        return any(p.search(text) for p in sib_patterns)
+
+    def has_disability(text: str) -> bool:
+        if add_pattern.search(text):
+            return True
+        lower = text.lower()
+        return any(p.search(lower) for p in dis_patterns)
 
 
 
@@ -558,24 +585,20 @@ def main():
             mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
             support_df = praw_df[mask_support].copy()
 
-             # 2) From all _other_ subreddits, require at least one sib‐term AND one disab‐term
-            others = praw_df[~mask_support].copy()
-           # build a lowercased “title + body” Series
-            combined = (others["Title"].fillna("") + " " + others["Body"].fillna("")).str.lower()
+            # 2) From all _other_ subreddits, require one exact sibling term AND one exact disability term
+            others   = praw_df[~mask_support].copy()
 
-           # sibling mask
-            sib_mask = combined.apply(
-                lambda text: any(sib.lower() in text for sib in selected_siblings)
-           )
-           # disability mask
-            dis_mask = combined.apply(
-                lambda text: any(dis.lower() in text for dis in selected_disabilities)
-           )
+            # Build the raw “title + body” string (we'll match case-sensitively for ADD, case-insensitive for others)
+            raw_text = others["Title"].fillna("") + " " + others["Body"].fillna("")
+
+            # Apply our helper functions:
+            sib_mask = raw_text.apply(has_sibling)      # uses regex patterns for siblings
+            dis_mask = raw_text.apply(has_disability)   # uses regex for ADD + other terms
 
             filtered_others = others[sib_mask & dis_mask]
 
-           # stitch them back together:
             all_posts_df = pd.concat([support_df, filtered_others], ignore_index=True)
+
 
 	
 
