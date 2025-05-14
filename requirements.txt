@@ -20,3 +20,4 @@ torch==2.2.0 --index-url https://download.pytorch.org/whl/cpu
 termcolor
 aiohttp
 pipeline
+ftfy==6.1.1
