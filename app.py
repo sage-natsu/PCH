@@ -648,7 +648,7 @@ def main():
                 "raw_reddit_data.csv",
                 mime="text/csv"
                 )
-        st.success("Cleaned & deduped CSV ready for download.")
+                st.success("Cleaned & deduped CSV ready for download.")
                 st.success("CSV downloaded! Now proceed to Colab.")    
                 colab_url = "https://colab.research.google.com/drive/1GMpH4iE0l54fIEchsM50EVb0pJJFdOy8"
                 st.markdown(f"**[Process Data in Google Colab]({colab_url})**", unsafe_allow_html=True)
