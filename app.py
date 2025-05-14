@@ -132,12 +132,21 @@ def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
     return pd.DataFrame(filtered)
 
 
+# Initialize once
+emotion_classifier = pipeline(
+    "text-classification",
+    model="j-hartmann/emotion-english-distilroberta-base",
+    device=0 if torch.cuda.is_available() else -1
+)
+
 
 # Function for sentiment and emotion analysis
 
 def analyze_sentiment_and_emotion(text):
     if pd.isna(text) or not text.strip():
         return "Neutral", "Neutral"
+
+    # 1) VADER sentiment as before
     sentiment_scores = sentiment_analyzer.polarity_scores(text)
     compound = sentiment_scores["compound"]
     if compound >= 0.05:
@@ -146,15 +155,15 @@ def analyze_sentiment_and_emotion(text):
         sentiment = "Negative"
     else:
         sentiment = "Neutral"
-    # Simple emotion logic
-    emotion = (
-        "Happy" if "happy" in text.lower() else
-        "Angry" if "angry" in text.lower() else
-        "Sad" if "sad" in text.lower() else
-        "Fearful" if "fear" in text.lower() else
-        "Neutral"
-    )
+
+    # 2) Transformer-based emotion
+    # Hugging-Face pipeline expects a list or single string
+    result = emotion_classifier(text)[0]
+    # result["label"] is one of: anger, disgust, fear, joy, neutral, sadness, surprise
+    emotion = result["label"].capitalize()
+
     return sentiment, emotion
+
     
 
 
