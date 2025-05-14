@@ -105,7 +105,7 @@ def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
     Keep only those posts where at least one sibling term AND
     at least one disability term appear anywhere in the title+body.
     """
-
+    add_pattern = re.compile(r'\bADD\b')
     # 1) Drop any rows with missing or empty Title/Body
     df = df.dropna(subset=["Title", "Body"]).copy()
     df = df[df["Title"].str.strip() != ""]
@@ -113,10 +113,18 @@ def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
 
     filtered = []
     for _, row in df.iterrows():
-        combined = (row["Title"] + " " + row["Body"]).lower()
+        title_body = row["Title"] + " " + row["Body"]
+        combined_lower = title_body.lower()
 
-        has_sib   = any(sib.lower() in combined for sib in   sibling_terms)
-        has_disab = any(dis.lower() in combined for dis in disability_terms)
+        # sibling check unchanged
+        has_sib = any(sib.lower() in combined_lower for sib in sibling_terms)
+
+        # disability check: ADD via regex on original text; others via lowercase
+        has_add = bool(add_pattern.search(title_body))
+        other_terms = [dis for dis in disability_terms if dis != "ADD"]
+        has_other = any(dis.lower() in combined_lower for dis in other_terms)
+
+        has_disab = has_add or has_other
 
         if has_sib and has_disab:
             filtered.append(row)
