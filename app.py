@@ -613,14 +613,14 @@ def main():
             support_df["__rank"]      = support_df["Subreddit"].map(rank_map)
             filtered_others["__rank"] = len(support_order)
 
-           # concat and sort by rank (and then by date if you like newest-first)
-           all_posts_df = pd.concat([support_df, filtered_others], ignore_index=True)
-           all_posts_df["Created_UTC"] = pd.to_datetime(all_posts_df["Created_UTC"], errors="coerce")
-           all_posts_df = all_posts_df.sort_values(
-           ["__rank", "Created_UTC"],
-           ascending=[True, False]
-           ).reset_index(drop=True)
-           all_posts_df.drop(columns="__rank", inplace=True)
+            # concat and sort by rank (and then by date if you like newest-first)
+            all_posts_df = pd.concat([support_df, filtered_others], ignore_index=True)
+            all_posts_df["Created_UTC"] = pd.to_datetime(all_posts_df["Created_UTC"], errors="coerce")
+            all_posts_df = all_posts_df.sort_values(
+            ["__rank", "Created_UTC"],
+            ascending=[True, False]
+            ).reset_index(drop=True)
+            all_posts_df.drop(columns="__rank", inplace=True)
 
 	
 
