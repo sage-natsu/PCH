@@ -333,7 +333,9 @@ async def fetch_sibling_subreddits(limit=50):
                     "Title": submission.title,
                     "Body": submission.selftext,
                     "Upvotes": submission.score,
-                    "Subreddit": sub,
+                    "Subreddit": submission.subreddit.display_name,
+		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
+                    "Subreddit_Desc":    getattr(submission.subreddit, "public_description", None),				
                     "Author": str(submission.author),
                     "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
                     "Sentiment": sentiment,
@@ -344,6 +346,7 @@ async def fetch_sibling_subreddits(limit=50):
                 optional_attributes = {
                     "Num_Comments": getattr(submission, "num_comments", None),
                     "Over_18": getattr(submission, "over_18", None),
+		    "Link_Flair": submission.link_flair_text,				
                     "URL": getattr(submission, "url", None),
                     "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
                     "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
