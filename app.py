@@ -236,6 +236,8 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                     "Body": submission.selftext if len(submission.selftext) < 1000 else "Text too long to display fully",
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
+		    "Subreddit_Lang":    getattr(sub, "lang", None),
+                    "Subreddit_Desc":    getattr(sub, "public_description", None),	
                     "Author": str(submission.author),
                     "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
                     "Sentiment": sentiment,
