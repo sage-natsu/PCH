@@ -358,7 +358,7 @@ async def fetch_sibling_subreddits(limit=50):
                     if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
                         detected_dis.append(dis)
                 sub = submission.subreddit
-	        await sub.load()     # <-- this populates all the metadata fields
+                await sub.load()     # <-- this populates all the metadata fields
     
                 # ✅ Prepare the post data
                 post_data = {
