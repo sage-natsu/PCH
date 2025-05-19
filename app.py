@@ -230,10 +230,10 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                 full_text = submission.title + " " + submission.selftext
                 sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
-              # ——— NEW: Detect exactly which terms match ———
-               combined_lower = full_text.lower()
-               # sibling
-               detected_sibs = [
+                # ——— NEW: Detect exactly which terms match ———
+                combined_lower = full_text.lower()
+                       # sibling
+                detected_sibs = [
                    sib for sib in sibling_terms
                    if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
                ]
