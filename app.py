@@ -244,7 +244,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                 for dis in disability_terms:
                     if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
                         detected_dis.append(dis)
-		sub = submission.subreddit    
+                sub = submission.subreddit    
                 # ✅ Prepare the post data with mandatory fields
                 post_data = {
                     "Post ID": submission.id,
