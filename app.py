@@ -177,12 +177,7 @@ def generate_queries(disability_terms, sibling_terms, batch_size=5):
             query = f"({' OR '.join(disability_group + sibling_group)})"
             queries.append(query)
 
-    # ✅ Also fetch posts from specific sibling support subreddits
-    sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings"
-    ]
-    for sub in sibling_support_subreddits:
-        queries.append(f"subreddit:{sub}")  # Fetch all posts from these subs
+
 
     return queries
 
