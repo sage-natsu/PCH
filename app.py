@@ -249,7 +249,8 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
-                    "Body": submission.selftext if len(submission.selftext) < 1000 else "Text too long to display fully",
+                    "Body": submi                sub = submission.subreddit    
+ssion.selftext if len(submission.selftext) < 1000 else "Text too long to display fully",
                     "Detected_Sibling_Terms": detected_sibs,
                     "Detected_Disability_Terms": detected_dis,			
                     "Upvotes": submission.score,
@@ -344,7 +345,24 @@ async def fetch_sibling_subreddits(limit=50):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
                 sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
+                full_text = submission.title + " " + submission.selftext
+                sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
+                # ——— NEW: Detect exactly which terms match ———
+                combined_lower = full_text.lower()
+                       # sibling
+                detected_sibs = [
+                   sib for sib in sibling_terms
+                   if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
+               ]
+               # disability: ADD special, then the rest
+                detected_dis = []
+                if add_pattern.search(full_text):
+                    detected_dis.append("ADD")
+                for dis in disability_terms:
+                    if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
+                        detected_dis.append(dis)
+                sub = submission.subreddit    
                 # ✅ Prepare the post data
                 post_data = {
                     "Post ID": submission.id,
@@ -352,8 +370,8 @@ async def fetch_sibling_subreddits(limit=50):
                     "Body": submission.selftext,
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
-		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
-                    "Subreddit_Desc":    getattr(submission.subreddit, "public_description", None),				
+		    "Subreddit_Lang":   getattr(sub, "lang", None),
+                    "Subreddit_Desc":   sub.public_description,					
                     "Author": str(submission.author),
                     "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
                     "Sentiment": sentiment,
