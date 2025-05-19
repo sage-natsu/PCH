@@ -249,8 +249,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
-                    "Body": submi                sub = submission.subreddit    
-ssion.selftext if len(submission.selftext) < 1000 else "Text too long to display fully",
+                    "Body": submission.selftext, 
                     "Detected_Sibling_Terms": detected_sibs,
                     "Detected_Disability_Terms": detected_dis,			
                     "Upvotes": submission.score,
