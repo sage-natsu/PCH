@@ -226,7 +226,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
 
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
-               
+                add_pattern = re.compile(r'\bADD\b')
                 full_text = submission.title + " " + submission.selftext
                 sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
@@ -343,7 +343,7 @@ async def fetch_sibling_subreddits(limit=50):
             async for submission in subreddit_instance.hot(limit=limit):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
-            
+                add_pattern = re.compile(r'\bADD\b')
                 full_text = submission.title + " " + submission.selftext
                 sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
