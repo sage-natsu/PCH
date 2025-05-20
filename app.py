@@ -59,6 +59,10 @@ zsl_classifier = load_zsl_model()
 # ✅ Ensure model is available before using
 if zsl_classifier is None:
     st.error("Zero-shot model failed to load. Posts filtering will be skipped.")
+def grouper(lst, n):
+    """Yield successive n-sized chunks from list."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
 
 
 # PRAW API credentials
