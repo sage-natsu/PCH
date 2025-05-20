@@ -166,25 +166,19 @@ def analyze_sentiment_and_emotion(text):
 
     
 # ✅ Function to Construct Queries Properly
+
 def generate_queries(disability_terms, sibling_terms, batch_size=5):
-    """Generate optimized Reddit search queries by batching terms to reduce API calls."""
-    disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
-    sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
-    
     queries = []
-    for disability_group in disability_batches:
-        for sibling_group in sibling_batches:
-            query = f"({' OR '.join(disability_group + sibling_group)})"
-            queries.append(query)
-
-    # ✅ Also fetch posts from specific sibling support subreddits
-    sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings"
-    ]
-    for sub in sibling_support_subreddits:
-        queries.append(f"subreddit:{sub}")  # Fetch all posts from these subs
-
+    for D in grouper(disability_terms, batch_size):
+        for S in grouper(sibling_terms, batch_size):
+            terms = D + S
+            parts = [f'"{t}"' if " " in t or "’" in t else t for t in terms]
+            queries.append(" OR ".join(parts))
+    # then still include your five support subs:
+    for sub in ["GlassChildren","AutisticSiblings","SiblingSupport","SpecialNeedsSiblings","DisabledSiblings"]:
+        queries.append(f"subreddit:{sub}")
     return queries
+
 
    
 async def is_subreddit_valid(reddit, subreddit_name):
@@ -221,7 +215,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
         query_data = []
         try:
             subreddit_instance = await reddit.subreddit(subreddit, fetch=True)
-            async for submission in subreddit_instance.search(query, limit=limit):
+            async for submission in subreddit_instance.search(  query,limit=limis ,syntax="lucene"):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
                 if not (start_date_utc <= created_date <= end_date_utc):
