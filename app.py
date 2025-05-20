@@ -1,4 +1,4 @@
-import re
+
 from datetime import datetime, timezone
 import subprocess
 import time  # Import the time module
@@ -59,10 +59,6 @@ zsl_classifier = load_zsl_model()
 # ✅ Ensure model is available before using
 if zsl_classifier is None:
     st.error("Zero-shot model failed to load. Posts filtering will be skipped.")
-def grouper(lst, n):
-    """Yield successive n-sized chunks from list."""
-    for i in range(0, len(lst), n):
-        yield lst[i : i + n]
 
 
 # PRAW API credentials
@@ -170,19 +166,25 @@ def analyze_sentiment_and_emotion(text):
 
     
 # ✅ Function to Construct Queries Properly
-
 def generate_queries(disability_terms, sibling_terms, batch_size=5):
+    """Generate optimized Reddit search queries by batching terms to reduce API calls."""
+    disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
+    sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
+    
     queries = []
-    for D in grouper(disability_terms, batch_size):
-        for S in grouper(sibling_terms, batch_size):
-            terms = D + S
-            parts = [f'"{t}"' if " " in t or "’" in t else t for t in terms]
-            queries.append(" OR ".join(parts))
-    # then still include your five support subs:
-    for sub in ["GlassChildren","AutisticSiblings","SiblingSupport","SpecialNeedsSiblings","DisabledSiblings"]:
-        queries.append(f"subreddit:{sub}")
-    return queries
+    for disability_group in disability_batches:
+        for sibling_group in sibling_batches:
+            query = f"({' OR '.join(disability_group + sibling_group)})"
+            queries.append(query)
 
+    # ✅ Also fetch posts from specific sibling support subreddits
+    sibling_support_subreddits = [
+        "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings"
+    ]
+    for sub in sibling_support_subreddits:
+        queries.append(f"subreddit:{sub}")  # Fetch all posts from these subs
+
+    return queries
 
    
 async def is_subreddit_valid(reddit, subreddit_name):
@@ -218,43 +220,24 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
         """Fetches posts for a single query asynchronously."""
         query_data = []
         try:
-            subreddit_instance = await reddit.subreddit(subreddit, fetch=True)
-            async for submission in subreddit_instance.search(  query,limit=limis ,syntax="lucene"):
+            subreddit_instance = await reddit.subreddit(subreddit)
+            async for submission in subreddit_instance.search(query, limit=limit):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
-                add_pattern = re.compile(r'\bADD\b')
-                full_text = submission.title + " " + submission.selftext
-                sentiment, emotion = analyze_sentiment_and_emotion(full_text)
+                sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " +  submission.selftext)
 
-                # ——— NEW: Detect exactly which terms match ———
-                combined_lower = full_text.lower()
-                       # sibling
-                detected_sibs = [
-                   sib for sib in sibling_terms
-                   if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
-               ]
-               # disability: ADD special, then the rest
-                detected_dis = []
-                if add_pattern.search(full_text):
-                    detected_dis.append("ADD")
-                for dis in disability_terms:
-                    if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
-                        detected_dis.append(dis)
-                sub = submission.subreddit
-                await sub.load()     # <-- this populates all the metadata fields
+		    
                 # ✅ Prepare the post data with mandatory fields
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
-                    "Body": submission.selftext, 
-                    "Detected_Sibling_Terms": detected_sibs,
-                    "Detected_Disability_Terms": detected_dis,			
+                    "Body": submission.selftext if len(submission.selftext) < 1000 else "Text too long to display fully",
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
-		    "Subreddit_Lang":   getattr(sub, "lang", None),
-                    "Subreddit_Desc":   sub.public_description,	
+		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
+                    "Subreddit_Desc":    getattr(submission.subreddit, "public_description", None),	
                     "Author": str(submission.author),
                     "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
                     "Sentiment": sentiment,
@@ -338,42 +321,21 @@ async def fetch_sibling_subreddits(limit=50):
 
     for sub in valid_subreddits:
         try:
-            subreddit_instance = await reddit.subreddit(sub,fetch=True)
+            subreddit_instance = await reddit.subreddit(sub)
             async for submission in subreddit_instance.hot(limit=limit):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
-                add_pattern = re.compile(r'\bADD\b')
-                full_text = submission.title + " " + submission.selftext
-                sentiment, emotion = analyze_sentiment_and_emotion(full_text)
+                sentiment, emotion = analyze_sentiment_and_emotion(submission.title + " " + submission.selftext)
 
-                # ——— NEW: Detect exactly which terms match ———
-                combined_lower = full_text.lower()
-                       # sibling
-                detected_sibs = [
-                   sib for sib in sibling_terms
-                   if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
-               ]
-               # disability: ADD special, then the rest
-                detected_dis = []
-                if add_pattern.search(full_text):
-                    detected_dis.append("ADD")
-                for dis in disability_terms:
-                    if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
-                        detected_dis.append(dis)
-                sub = submission.subreddit
-                await sub.load()     # <-- this populates all the metadata fields
-    
                 # ✅ Prepare the post data
                 post_data = {
                     "Post ID": submission.id,
                     "Title": submission.title,
                     "Body": submission.selftext,
-		    "Detected_Sibling_Terms": detected_sibs,
-                    "Detected_Disability_Terms": detected_dis,
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
-		    "Subreddit_Lang":   getattr(sub, "lang", None),
-                    "Subreddit_Desc":   sub.public_description,					
+		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
+                    "Subreddit_Desc":    getattr(submission.subreddit, "public_description", None),				
                     "Author": str(submission.author),
                     "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
                     "Sentiment": sentiment,
