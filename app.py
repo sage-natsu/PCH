@@ -209,17 +209,15 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
         client_secret=REDDIT_CLIENT_SECRET,
         user_agent=REDDIT_USER_AGENT,
     )
-
-    data = []
     # ✅ Fetch sibling support subreddits in parallel with keyword queries
     sibling_posts = await fetch_sibling_subreddits()
- # ✅ Add posts from sibling subreddits
-    if sibling_posts:
-        data.extend(sibling_posts)	
+    data = []
+
+
     async def fetch_single_query(query):
         """Fetches posts for a single query asynchronously."""
         query_data = []
-        subreddit_instance = await reddit.subreddit("all")
+        subreddit_instance = await reddit.subreddit(subreddit)
     
         max_tries = 3
         for attempt in range(max_tries):
@@ -321,9 +319,8 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
         if isinstance(res, list):
             data.extend(res)
 
-    # ✅ Add posts from sibling subreddits
-    if sibling_posts:
-        data.extend(sibling_posts)
+
+    data.extend(sibling_posts)
 
     # ✅ Ensure at least an empty DataFrame is returned
     return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
@@ -356,7 +353,8 @@ async def fetch_sibling_subreddits(limit=1000):
             subreddit_instance = await reddit.subreddit(sub)
             async for submission in subreddit_instance.new(limit=None):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-
+                if not (start_date_utc <= created_date <= end_date_utc):
+                continue
                 add_pattern = re.compile(r'\bADD\b')
                 full_text = submission.title + " " + submission.selftext
                 sentiment, emotion = analyze_sentiment_and_emotion(full_text)
