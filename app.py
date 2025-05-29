@@ -302,7 +302,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                      await asyncio.sleep(wait)
                      continue
                 # otherwise, re-raise
-                raise
+                 raise
 
     return query_data
 
