@@ -521,6 +521,29 @@ def cached_fetch_data(queries, start_date_utc, end_date_utc, limit_per_query, su
 if "cleaned_data" not in st.session_state:
     st.session_state.cleaned_data = pd.DataFrame()
 
+# Map sentiment label back to a numeric for averaging
+_LABEL_TO_SCORE = {"Positive": 1, "Neutral": 0, "Negative": -1}
+
+async def fetch_comments_for_post(post_id, limit=100):
+    # returns a DataFrame of comments for one post
+    return await fetch_comments(post_id, limit=limit)
+
+async def enrich_with_comments(posts_df):
+    records = []
+    for _, post in posts_df.iterrows():
+        pid = post["Post ID"]
+        comments_df = await fetch_comments_for_post(pid)
+        n = len(comments_df)
+        avg_sent = comments_df["Sentiment"].map(_LABEL_TO_SCORE).mean() if n else None
+        top3 = comments_df.nlargest(3, "Score")["Body"].tolist()
+        post_rec = post.to_dict()
+        post_rec.update({
+            "Num_Comments_Fetched": n,
+            "Avg_Comment_Sentiment": avg_sent,
+            "Top_3_Comments": " ‖ ".join(top3)
+        })
+        records.append(post_rec)
+    return pd.DataFrame(records)
 
 # Main Streamlit app
 def main():
