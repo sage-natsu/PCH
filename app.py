@@ -309,9 +309,9 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
 
 
 
-        results = await asyncio.gather(
-            *[fetch_single_query(q) for q in queries],  # Keyword-based search
-            return_exceptions=True
+   results = await asyncio.gather(
+       *[fetch_single_query(q) for q in queries],  # Keyword-based search
+       return_exceptions=True
         )
 
         # ✅ Collect valid results
