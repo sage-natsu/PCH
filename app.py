@@ -300,7 +300,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                      wait = 2 ** attempt
                      st.warning(f"Rate limit hit for `{query}`—retrying in {wait}s…")
                      await asyncio.sleep(wait)
-                    continue
+                     continue
             # otherwise, re-raise
             raise
 
