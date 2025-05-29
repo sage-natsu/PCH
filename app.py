@@ -354,7 +354,7 @@ async def fetch_sibling_subreddits(limit=1000):
             async for submission in subreddit_instance.new(limit=None):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
                 if not (start_date_utc <= created_date <= end_date_utc):
-                continue
+                    continue
                 add_pattern = re.compile(r'\bADD\b')
                 full_text = submission.title + " " + submission.selftext
                 sentiment, emotion = analyze_sentiment_and_emotion(full_text)
