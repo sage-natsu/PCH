@@ -219,7 +219,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
     async def fetch_single_query(query):
         """Fetches posts for a single query asynchronously."""
         query_data = []
-	subreddit_instance = await reddit.subreddit(subreddit)
+        subreddit_instance = await reddit.subreddit(subreddit)
     
         max_tries = 3
         for attempt in range(max_tries):
