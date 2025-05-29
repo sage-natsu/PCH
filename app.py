@@ -296,11 +296,11 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                 break
              except RedditAPIException as e:
             # if it's a rate-limit 429, wait and retry
-            if "429" in str(e):
-                wait = 2 ** attempt
-                st.warning(f"Rate limit hit for `{query}`—retrying in {wait}s…")
-                await asyncio.sleep(wait)
-                continue
+                 if "429" in str(e):
+                     wait = 2 ** attempt
+                     st.warning(f"Rate limit hit for `{query}`—retrying in {wait}s…")
+                     await asyncio.sleep(wait)
+                    continue
             # otherwise, re-raise
             raise
 
