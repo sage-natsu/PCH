@@ -325,7 +325,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
     # ✅ Ensure at least an empty DataFrame is returned
     return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
 
-async def fetch_sibling_subreddits(limit=1000):
+async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
     """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
     sibling_support_subreddits = [
@@ -525,6 +525,11 @@ _LABEL_TO_SCORE = {"Positive": 1, "Neutral": 0, "Negative": -1}
 async def fetch_comments_for_post(post_id, limit=100):
     # returns a DataFrame of comments for one post
     return await fetch_comments(post_id, limit=limit)
+	
+def safe_top3_comments(comments_df):
+    if "Score" not in comments_df.columns or comments_df.empty:
+        return []
+    return comments_df.nlargest(3, "Score")["Body"].tolist()
 
 async def enrich_with_comments(posts_df):
     records = []
@@ -532,16 +537,20 @@ async def enrich_with_comments(posts_df):
         pid = post["Post ID"]
         comments_df = await fetch_comments_for_post(pid)
         n = len(comments_df)
-        avg_sent = comments_df["Sentiment"].map(_LABEL_TO_SCORE).mean() if n else None
-        top3 = comments_df.nlargest(3, "Score")["Body"].tolist()
+        avg_sent = (comments_df["Sentiment"]
+                    .map(_LABEL_TO_SCORE)
+                    .mean()) if n and "Sentiment" in comments_df.columns else None
+
+        top3_list = safe_top3_comments(comments_df)
         post_rec = post.to_dict()
         post_rec.update({
             "Num_Comments_Fetched": n,
             "Avg_Comment_Sentiment": avg_sent,
-            "Top_3_Comments": " ‖ ".join(top3)
+            "Top_3_Comments": " ‖ ".join(top3_list)
         })
         records.append(post_rec)
     return pd.DataFrame(records)
+
 
 # Main Streamlit app
 def main():
