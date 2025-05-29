@@ -236,12 +236,12 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                     sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
                 # ——— NEW: Detect exactly which terms match ———
-                     combined_lower = full_text.lower()
+                    combined_lower = full_text.lower()
                        # sibling
-                     detected_sibs = [
+                    detected_sibs = [
                        sib for sib in sibling_terms
-                        if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
-                                   ]
+                       if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
+                ]
                # disability: ADD special, then the rest
                     detected_dis = []
                     if add_pattern.search(full_text):
