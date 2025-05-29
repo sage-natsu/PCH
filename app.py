@@ -253,69 +253,69 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
                         "Post ID": submission.id,
                         "Title": submission.title,
                         "Body": submission.selftext, 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                               "Detected_Sibling_Terms": detected_sibs,
-                    "Detected_Disability_Terms": detected_dis,			
-                    "Upvotes": submission.score,
-                    "Subreddit": submission.subreddit.display_name,
-		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
-                    "Subreddit_Desc":    getattr(submission.subreddit, "public_description", None),	
-                    "Author": str(submission.author),
-                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Sentiment": sentiment,
-                    "Emotion": emotion,
-                }
+		        "Detected_Sibling_Terms": detected_sibs,
+                        "Detected_Disability_Terms": detected_dis,			
+                        "Upvotes": submission.score,
+                        "Subreddit": submission.subreddit.display_name,
+		        "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
+                        "Subreddit_Desc":    getattr(submission.subreddit, "public_description", None),	
+                        "Author": str(submission.author),
+                        "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                        "Sentiment": sentiment,
+                        "Emotion": emotion,
+                    }
 
-                # If the body is truncated (too long), fetch the full body
-                if len(submission.selftext) >= 1000:
-                    await submission.load()  # Fetch the full content
-                    post_data["Body"] = submission.selftext  # Update with full content
+                    # If the body is truncated (too long), fetch the full body
+                    if len(submission.selftext) >= 1000:
+                        await submission.load()  # Fetch the full content
+                        post_data["Body"] = submission.selftext  # Update with full content
 
-                # ✅ Add optional attributes if available
-                optional_attributes = {
-                    "Num_Comments": getattr(submission, "num_comments", None),
-                    "Over_18": getattr(submission, "over_18", None),
-		    "Link_Flair": submission.link_flair_text,	
-                    "URL": getattr(submission, "url", None),
-                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-                    "Pinned": getattr(submission, "stickied", None),
-                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-                    "Gilded": getattr(submission, "gilded", None),
-                    "Edited": submission.edited if submission.edited else None
-                }
+                    # ✅ Add optional attributes if available
+                        optional_attributes = {
+                        "Num_Comments": getattr(submission, "num_comments", None),
+                        "Over_18": getattr(submission, "over_18", None),
+		        "Link_Flair": submission.link_flair_text,	
+                        "URL": getattr(submission, "url", None),
+                        "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                        "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                        "Pinned": getattr(submission, "stickied", None),
+                        "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                        "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                        "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                        "Gilded": getattr(submission, "gilded", None),
+                        "Edited": submission.edited if submission.edited else None
+                    }
 
-                # ✅ Only add optional attributes if they are not None
-                for key, value in optional_attributes.items():
-                    if value is not None:
-                        post_data[key] = value
+                   # ✅ Only add optional attributes if they are not None
+                    for key, value in optional_attributes.items():
+                        if value is not None:
+                            post_data[key] = value
 
-                query_data.append(post_data)
+                    query_data.append(post_data)
 
-        except Exception as e:
-            st.error(f"Error fetching query `{query}`: {e}")
+            except Exception as e:
+                st.error(f"Error fetching query `{query}`: {e}")
 
-        return query_data
+            return query_data
 
 
 
-    results = await asyncio.gather(
-        *[fetch_single_query(q) for q in queries],  # Keyword-based search
-        return_exceptions=True
-    )
+        results = await asyncio.gather(
+            *[fetch_single_query(q) for q in queries],  # Keyword-based search
+            return_exceptions=True
+        )
 
-    # ✅ Collect valid results
-    for res in results:
-        if isinstance(res, list):
-            data.extend(res)
+        # ✅ Collect valid results
+        for res in results:
+            if isinstance(res, list):
+                data.extend(res)
+ 
+        # ✅ Add posts from sibling subreddits
+        if sibling_posts:
+            data.extend(sibling_posts)
 
-    # ✅ Add posts from sibling subreddits
-    if sibling_posts:
-        data.extend(sibling_posts)
-
-    # ✅ Ensure at least an empty DataFrame is returned
-    return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
+        # ✅ Ensure at least an empty DataFrame is returned
+        return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
 
 async def fetch_sibling_subreddits(limit=50):
     """Fetch latest posts from valid sibling support subreddits."""
