@@ -309,22 +309,22 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
 
 
 
-   results = await asyncio.gather(
-       *[fetch_single_query(q) for q in queries],  # Keyword-based search
-       return_exceptions=True
-        )
+    results = await asyncio.gather(
+        *[fetch_single_query(q) for q in queries],  # Keyword-based search
+        return_exceptions=True
+    )
 
-        # ✅ Collect valid results
-        for res in results:
-            if isinstance(res, list):
-                data.extend(res)
- 
-        # ✅ Add posts from sibling subreddits
-        if sibling_posts:
-            data.extend(sibling_posts)
+    # ✅ Collect valid results
+    for res in results:
+        if isinstance(res, list):
+            data.extend(res)
 
-        # ✅ Ensure at least an empty DataFrame is returned
-        return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
+    # ✅ Add posts from sibling subreddits
+    if sibling_posts:
+        data.extend(sibling_posts)
+
+    # ✅ Ensure at least an empty DataFrame is returned
+    return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
 
 async def fetch_sibling_subreddits(limit=1000):
     """Fetch latest posts from valid sibling support subreddits."""
