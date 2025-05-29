@@ -202,7 +202,7 @@ async def is_subreddit_valid(reddit, subreddit_name):
 
 # Async function to fetch posts using PRAW
 # ✅ Async Function to Fetch Posts Efficiently (No ZSL Filtering Here)
-async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subreddit="all"):
+async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subreddit="all"):
     """Fetch Reddit posts asynchronously for given keyword queries AND sibling support subreddits."""
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -224,7 +224,8 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
              try:
                 async for submission in subreddit_instance.search(
                     query,
-                    limit=limit,
+                    limit=None,              # ← no max, pull as many as Reddit will give you
+                    sort="new", 
                     syntax="lucene"
                 ):
                     created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
@@ -325,7 +326,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=50, subre
         # ✅ Ensure at least an empty DataFrame is returned
         return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
 
-async def fetch_sibling_subreddits(limit=50):
+async def fetch_sibling_subreddits(limit=1000):
     """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
     sibling_support_subreddits = [
@@ -351,7 +352,7 @@ async def fetch_sibling_subreddits(limit=50):
     for sub in valid_subreddits:
         try:
             subreddit_instance = await reddit.subreddit(sub)
-            async for submission in subreddit_instance.hot(limit=limit):
+            async for submission in subreddit_instance.new(limit=None):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
                 add_pattern = re.compile(r'\bADD\b')
@@ -430,7 +431,7 @@ def group_terms(terms, group_size=3):
         
 
 # Async function to fetch comments for a specific post
-async def fetch_comments(post_id, limit=100):
+async def fetch_comments(post_id, limit=500):
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
