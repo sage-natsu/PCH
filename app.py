@@ -304,7 +304,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                 # otherwise, re-raise
                  raise
 
-    return query_data
+        return query_data
 
 
 
