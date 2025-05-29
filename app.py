@@ -210,7 +210,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
         user_agent=REDDIT_USER_AGENT,
     )
     # ✅ Fetch sibling support subreddits in parallel with keyword queries
-    sibling_posts = await fetch_sibling_subreddits()
+    sibling_posts = await fetch_sibling_subreddits(start_date_utc, end_date_utc, limit)
     data = []
 
 
