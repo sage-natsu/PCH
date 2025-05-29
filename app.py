@@ -657,7 +657,7 @@ def main():
             praw_df = cached_fetch_data(queries,
                                 start_date_utc,
                                 end_date_utc,
-                                limit_per_query,
+                                500,
                                 (subreddit_filter if subreddit_filter.lower() != "all" else "all")
 )
 
