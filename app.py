@@ -525,31 +525,52 @@ _LABEL_TO_SCORE = {"Positive": 1, "Neutral": 0, "Negative": -1}
 async def fetch_comments_for_post(post_id, limit=100):
     # returns a DataFrame of comments for one post
     return await fetch_comments(post_id, limit=limit)
-	
+
 def safe_top3_comments(comments_df):
     if "Score" not in comments_df.columns or comments_df.empty:
         return []
     return comments_df.nlargest(3, "Score")["Body"].tolist()
+
+def analyze_comment_sentiment_emotion(comment_text):
+    if pd.isna(comment_text) or not comment_text.strip():
+        return "Neutral", "Neutral"
+    scores = sentiment_analyzer.polarity_scores(comment_text)
+    compound = scores["compound"]
+    sentiment = (
+        "Positive" if compound >= 0.05 else
+        "Negative" if compound <= -0.05 else
+        "Neutral"
+    )
+    try:
+        emotion = emo_pipe(comment_text)[0]["label"].capitalize()
+    except:
+        emotion = "Neutral"
+    return sentiment, emotion
 
 async def enrich_with_comments(posts_df):
     records = []
     for _, post in posts_df.iterrows():
         pid = post["Post ID"]
         comments_df = await fetch_comments_for_post(pid)
-        n = len(comments_df)
-        avg_sent = (comments_df["Sentiment"]
-                    .map(_LABEL_TO_SCORE)
-                    .mean()) if n and "Sentiment" in comments_df.columns else None
-
         top3_list = safe_top3_comments(comments_df)
+
+        comment_sentiments = []
+        comment_emotions = []
+
+        for c in top3_list:
+            sent, emo = analyze_comment_sentiment_emotion(c)
+            comment_sentiments.append(sent)
+            comment_emotions.append(emo)
+
         post_rec = post.to_dict()
         post_rec.update({
-            "Num_Comments_Fetched": n,
-            "Avg_Comment_Sentiment": avg_sent,
-            "Top_3_Comments": " ‖ ".join(top3_list)
+            "Top_3_Comments": " | ".join(top3_list),
+            "Top_3_Comment_Sentiments": " | ".join(comment_sentiments),
+            "Top_3_Comment_Emotions": " | ".join(comment_emotions),
         })
         records.append(post_rec)
     return pd.DataFrame(records)
+
 
 
 # Main Streamlit app
