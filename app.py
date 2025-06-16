@@ -550,6 +550,7 @@ def analyze_comment_sentiment_emotion(comment_text):
 async def enrich_with_comments(posts_df):
     records = []
     for _, post in posts_df.iterrows():
+        await asyncio.sleep(1)  # <-- adding a 1-second delay between each request for 429 error handling	    
         pid = post["Post ID"]
         comments_df = await fetch_comments_for_post(pid)
         top3_list = safe_top3_comments(comments_df)
