@@ -127,7 +127,7 @@ def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
 
         has_disab = has_add or has_other
 
-        if has_sib and has_disab:
+        if has_sib or has_disab:
             filtered.append(row)
 
     return pd.DataFrame(filtered)
