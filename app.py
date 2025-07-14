@@ -576,7 +576,7 @@ async def enrich_with_comments(posts_df):
                 comments_df["Author"].str.lower() == post_author
             ]["Body"].tolist()
 	
-	for c in top3_comments:
+        for c in top3_comments:
             sent, emo = analyze_comment_sentiment_emotion(c)
             comment_sentiments.append(sent)
             comment_emotions.append(emo)        
