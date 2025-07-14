@@ -127,7 +127,7 @@ def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
 
         has_disab = has_add or has_other
 
-        if has_sib or has_disab:
+        if has_sib and has_disab:
             filtered.append(row)
 
     return pd.DataFrame(filtered)
@@ -550,7 +550,6 @@ def analyze_comment_sentiment_emotion(comment_text):
 async def enrich_with_comments(posts_df):
     records = []
     for _, post in posts_df.iterrows():
-        await asyncio.sleep(1)  # For API courtesy
         pid = post["Post ID"]
         post_author = post.get("Author", "").lower()
         comments_df = await fetch_comments_for_post(pid)
