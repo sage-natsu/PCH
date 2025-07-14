@@ -550,27 +550,49 @@ def analyze_comment_sentiment_emotion(comment_text):
 async def enrich_with_comments(posts_df):
     records = []
     for _, post in posts_df.iterrows():
-        await asyncio.sleep(1)  # <-- adding a 1-second delay between each request for 429 error handling	    
+        await asyncio.sleep(1)  # For API courtesy
         pid = post["Post ID"]
+        post_author = post.get("Author", "").lower()
         comments_df = await fetch_comments_for_post(pid)
-        top3_list = safe_top3_comments(comments_df)
-
-        comment_sentiments = []
-        comment_emotions = []
-
-        for c in top3_list:
+        
+        # Top 3 upvoted comments
+        top3_comments = []
+        if not comments_df.empty:
+            top3_comments = comments_df.nlargest(3, "Score")["Body"].tolist()
+        
+        # Top 3 downvoted comments (lowest scores)
+        bottom3_comments = []
+        if not comments_df.empty:
+            bottom3_comments = comments_df.nsmallest(3, "Score")["Body"].tolist()
+	    
+	comment_sentiments = []
+        comment_emotions = []    
+        
+        # Author's comments
+        author_comments = []
+        if not comments_df.empty and post_author:
+            # Author can be '[deleted]' or None sometimes
+            author_comments = comments_df[
+                comments_df["Author"].str.lower() == post_author
+            ]["Body"].tolist()
+	
+	for c in top3_comments:
             sent, emo = analyze_comment_sentiment_emotion(c)
             comment_sentiments.append(sent)
-            comment_emotions.append(emo)
-
+            comment_emotions.append(emo)        
+        
         post_rec = post.to_dict()
         post_rec.update({
-            "Top_3_Comments": " | ".join(top3_list),
-            "Top_3_Comment_Sentiments": " | ".join(comment_sentiments),
-            "Top_3_Comment_Emotions": " | ".join(comment_emotions),
+            "Top_3_Comments": " | ".join(top3_comments),
+	    "Top_3_Comment_Sentiments": " | ".join(comment_sentiments),
+            "Top_3_Comment_Emotions": " | ".join(comment_emotions)
+            "Bottom_3_Comments": " | ".join(bottom3_comments),
+            "Author_Commented": "Yes" if author_comments else "No",
+            "Author_Comments": " | ".join(author_comments),
         })
         records.append(post_rec)
     return pd.DataFrame(records)
+
 
 
 
