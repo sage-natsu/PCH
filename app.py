@@ -585,7 +585,7 @@ async def enrich_with_comments(posts_df):
         post_rec.update({
             "Top_3_Comments": " | ".join(top3_comments),
 	    "Top_3_Comment_Sentiments": " | ".join(comment_sentiments),
-            "Top_3_Comment_Emotions": " | ".join(comment_emotions)
+            "Top_3_Comment_Emotions": " | ".join(comment_emotions),
             "Bottom_3_Comments": " | ".join(bottom3_comments),
             "Author_Commented": "Yes" if author_comments else "No",
             "Author_Comments": " | ".join(author_comments),
