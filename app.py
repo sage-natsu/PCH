@@ -563,8 +563,9 @@ async def enrich_with_comments(posts_df):
         bottom3_comments = []
         if not comments_df.empty:
             bottom3_comments = comments_df.nsmallest(3, "Score")["Body"].tolist()
+
 	    
-	comment_sentiments = []
+        comment_sentiments = []
         comment_emotions = []    
         
         # Author's comments
