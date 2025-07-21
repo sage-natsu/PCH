@@ -165,7 +165,7 @@ def detect_autism(text):
     # Looks for whole words "autism" or "autistic" (case-insensitive)
     return "Yes" if re.search(r"\bautism\b", text, re.IGNORECASE) or re.search(r"\bautistic\b", text, re.IGNORECASE) else "No"
 
-all_posts_df["Autism_Detected"] = (all_posts_df["Title"].fillna('') + " " + all_posts_df["Body"].fillna('')).map(detect_autism)
+autism_detected_value  = (all_posts_df["Title"].fillna('') + " " + all_posts_df["Body"].fillna('')).map(detect_autism)
 
 
 
@@ -261,7 +261,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                         "Body": submission.selftext, 
 		        "Detected_Sibling_Terms": detected_sibs,
                         "Detected_Disability_Terms": detected_dis,
-			"Autism_Detected":,   
+			"Autism_Detected":autism_detected_value ,   
                         "Upvotes": submission.score,
                         "Subreddit": submission.subreddit.display_name,
 		        "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
@@ -388,7 +388,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                     "Body": submission.selftext,
 		    "Detected_Sibling_Terms": detected_sibs,
                     "Detected_Disability_Terms": detected_dis,
-                    "Autism_Detected":,
+                    "Autism_Detected":autism_detected_value ,
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
 		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
