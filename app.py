@@ -159,16 +159,6 @@ def analyze_sentiment_and_emotion(text):
         "Neutral"
     )
     return sentiment, emotion
-
-    
-def detect_autism(text):
-    # Looks for whole words "autism" or "autistic" (case-insensitive)
-    return "Yes" if re.search(r"\bautism\b", text, re.IGNORECASE) or re.search(r"\bautistic\b", text, re.IGNORECASE) else "No"
-
-autism_detected_value  = (all_posts_df["Title"].fillna('') + " " + all_posts_df["Body"].fillna('')).map(detect_autism)
-
-
-
     
 # ✅ Function to Construct Queries Properly
 def generate_queries(disability_terms, sibling_terms, batch_size=20):
@@ -254,6 +244,14 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                     for dis in disability_terms:
                         if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
                             detected_dis.append(dis)
+
+			# --------- Autism Detected logic ---------
+                    # Looks for "autism" or "autistic" as whole words, case-insensitive
+                    if re.search(r"\bautism\b", combined_lower) or re.search(r"\bautistic\b", combined_lower):
+                        autism_detected = "Yes"
+                    else:
+                        autism_detected = "No"
+			    
                 # ✅ Prepare the post data with mandatory fields
                     post_data = {
                         "Post ID": submission.id,
@@ -261,7 +259,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                         "Body": submission.selftext, 
 		        "Detected_Sibling_Terms": detected_sibs,
                         "Detected_Disability_Terms": detected_dis,
-			"Autism_Detected":autism_detected_value ,   
+			"Autism_Detected":autism_detected ,   
                         "Upvotes": submission.score,
                         "Subreddit": submission.subreddit.display_name,
 		        "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
@@ -379,6 +377,12 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                 for dis in disability_terms:
                     if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
                         detected_dis.append(dis)
+		# --------- Autism Detected logic ---------
+                # Looks for "autism" or "autistic" as whole words, case-insensitive
+                if re.search(r"\bautism\b", combined_lower) or re.search(r"\bautistic\b", combined_lower):
+                    autism_detected = "Yes"
+                else:
+                    autism_detected = "No"	    
 
     
                 # ✅ Prepare the post data
@@ -388,7 +392,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                     "Body": submission.selftext,
 		    "Detected_Sibling_Terms": detected_sibs,
                     "Detected_Disability_Terms": detected_dis,
-                    "Autism_Detected":autism_detected_value ,
+                    "Autism_Detected":autism_detected ,
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
 		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
