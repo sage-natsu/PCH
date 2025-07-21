@@ -1,4 +1,4 @@
-import re
+i:mport re
 from datetime import datetime, timezone
 import subprocess
 import time  # Import the time module
@@ -261,7 +261,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                         "Body": submission.selftext, 
 		        "Detected_Sibling_Terms": detected_sibs,
                         "Detected_Disability_Terms": detected_dis,
-			"Autism_Detected",   
+			"Autism_Detected":,   
                         "Upvotes": submission.score,
                         "Subreddit": submission.subreddit.display_name,
 		        "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
@@ -388,7 +388,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                     "Body": submission.selftext,
 		    "Detected_Sibling_Terms": detected_sibs,
                     "Detected_Disability_Terms": detected_dis,
-                    "Autism_Detected",
+                    "Autism_Detected":,
                     "Upvotes": submission.score,
                     "Subreddit": submission.subreddit.display_name,
 		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
