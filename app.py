@@ -806,6 +806,13 @@ def main():
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
+		# Count number of posts per author
+                author_post_counts = all_posts_df['Author'].value_counts().reset_index()
+                                                                                                                                                                                                                  author_post_counts.columns = ['Author', 'Author_Post_Count']
+
+# Merge this back into the main dataframe
+                all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
+    
                 # 4) Now store and download the cleaned, deduped CSV
                 st.session_state.all_posts = all_posts_df
                 st.sidebar.download_button(
