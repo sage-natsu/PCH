@@ -808,8 +808,8 @@ def main():
                     all_posts_df.groupby('Author')
                     .size()
                     .reset_index(name='Author_Post_Count')
-)
-all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
+                )
+                all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
 # --- END BLOCK ---    
                 st.write(f"Total fetched records: {len(all_posts_df)}")   
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
