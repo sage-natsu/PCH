@@ -801,15 +801,21 @@ def main():
                 .sort_values("Created_UTC")
                 .drop_duplicates(subset=["Title", "Body"], keep="last")
                 .reset_index(drop=True)
-                )                
+                )  
+		# --- ADD THIS BLOCK ---
+                # Count posts per author and merge into dataframe
+                author_post_counts = (
+                    all_posts_df.groupby('Author')
+                    .size()
+                    .reset_index(name='Author_Post_Count')
+)
+all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
+# --- END BLOCK ---    
                 st.write(f"Total fetched records: {len(all_posts_df)}")   
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
                 st.dataframe(all_posts_df)
-		# Count number of posts per author
-                author_post_counts = all_posts_df['Author'].value_counts().reset_index()                                                                                                                                                                                                                  author_post_counts.columns = ['Author', 'Author_Post_Count']
-                # Merge this back into the main dataframe
-                all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
+	
     
                 # 4) Now store and download the cleaned, deduped CSV
                 st.session_state.all_posts = all_posts_df
