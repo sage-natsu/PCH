@@ -248,7 +248,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
 
 			# --------- Autism Detected logic ---------
                     # Looks for "autism" or "autistic" as whole words, case-insensitive
-                    if re.search(r"\b(autism|autistic|ASD|neurodivergent|Asperger|Aspergers|neurodiverse|Asperger’s|Aspie|AuADHD|neurospicy,"Audhd")\b", combined_lower):
+                    if re.search(r"\b(autism|autistic|ASD|neurodivergent|Asperger|Aspergers|neurodiverse|Asperger’s|Aspie|AuADHD|neurospicy|Audhd)\b", combined_lower):
                         autism_detected = "Yes"
                     else:
                         autism_detected = "No"
@@ -971,6 +971,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
