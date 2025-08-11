@@ -77,7 +77,7 @@ disability_terms = [
     "Developmentally delayed", "Developmental disorder", "DiGeorge syndrome",
     "Disabilities", "Disability", "Disabled", "Down syndrome", "Down’s  syndrome",
     "Downs syndrome", "Epilepsy", "Epileptic", "FAS", "FASD", "Fetal alcohol",
-    "Foetal alcohol", "Fragile X", "GDD", "Genetic condition", "Genetic disorder",“Genetic disease”,
+    "Foetal alcohol", "Fragile X", "GDD", "Genetic condition", "Genetic disorder", “Genetic disease”,
     "Hereditary", "Huntington", "Huntington’s", “High support needs”, "SN", "Intellectual impairment", "MECP2", "Mental delay",
     "Mentally delayed", "Mentally impaired", "Mental impairment", "NDC", "NDIS",
     "Neurodevelopmental", "Neurodivergent", "Neurodiverse", "Neurospicy",
@@ -971,4 +971,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
