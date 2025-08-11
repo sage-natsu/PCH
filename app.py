@@ -68,21 +68,21 @@ REDDIT_USER_AGENT = "windows:SiblingsDataApp:v1.0 (by /u/Proper-Leading-4091)"
 
 # Define disability and sibling terms
 disability_terms = [
-    "22q", "22q11.2", "ADD", "ADHD", "Angelman", "Angelmans", "ASD",
+    "22q", "22q11.2", "ADD", "ADHD","Audhd", "Angelman", "Angelmans", "ASD",
     "Asperger", "Asperger’s", "Aspergers", "Aspie", "Attention deficit disorder",
     "Attention deficit hyperactivity disorder", "AuADHD", "Autism", "Autistic",
     "CDKL5", "Cerebral palsy", "CHARGE syndrome", "Chromosomal", "Cognitive delay",
     "Cognitively delayed", "Cognitive impairment", "Cognitively impaired",
-    "Cornelia de Lange", "CP", "Developmental condition", "Developmental delay",
+    "Cornelia de Lange", "CP", "Developmental condition","Deaf","Developmental delay",
     "Developmentally delayed", "Developmental disorder", "DiGeorge syndrome",
     "Disabilities", "Disability", "Disabled", "Down syndrome", "Down’s  syndrome",
     "Downs syndrome", "Epilepsy", "Epileptic", "FAS", "FASD", "Fetal alcohol",
-    "Foetal alcohol", "Fragile X", "GDD", "Genetic condition", "Genetic disorder",
-    "Hereditary", "Intellectual impairment", "MECP2", "Mental delay",
+    "Foetal alcohol", "Fragile X", "GDD", "Genetic condition", "Genetic disorder",“Genetic disease”,
+    "Hereditary", "Huntington", "Huntington’s", “High support needs”, "SN", "Intellectual impairment", "MECP2", "Mental delay",
     "Mentally delayed", "Mentally impaired", "Mental impairment", "NDC", "NDIS",
     "Neurodevelopmental", "Neurodivergent", "Neurodiverse", "Neurospicy",
     "Prader Willi", "Prader-Willi", "Rett syndrome", "Rett’s syndrome",
-    "Retts syndrome", "Tic disorder", "Tics", "Tourette", "Tourette’s",
+    "Retts syndrome", “Special needs”, “Special ed”, “Special education”, “The spectrum” ,"Tic disorder", "Tics", "Tourette", "Tourette’s",
     "Tourettes", "Velocardiofacial syndrome", "William syndrome", "Williams syndrome"
 ]
 
@@ -174,7 +174,8 @@ def generate_queries(disability_terms, sibling_terms, batch_size=20):
 
     # ✅ Also fetch posts from specific sibling support subreddits
     sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings"
+        "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"
+
     ]
     for sub in sibling_support_subreddits:
         queries.append(f"subreddit:{sub}")  # Fetch all posts from these subs
@@ -247,7 +248,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
 
 			# --------- Autism Detected logic ---------
                     # Looks for "autism" or "autistic" as whole words, case-insensitive
-                    if re.search(r"\b(autism|autistic|ASD|neurodivergent|Asperger|Aspergers|neurodiverse|Asperger’s|Aspie|AuADHD|neurospicy)\b", combined_lower):
+                    if re.search(r"\b(autism|autistic|ASD|neurodivergent|Asperger|Aspergers|neurodiverse|Asperger’s|Aspie|AuADHD|neurospicy,"Audhd")\b", combined_lower):
                         autism_detected = "Yes"
                     else:
                         autism_detected = "No"
@@ -730,7 +731,7 @@ def main():
             "AutisticSiblings",
             "SiblingSupport",
             "SpecialNeedsSiblings",
-            "DisabledSiblings"
+            "DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"
              }
             mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
             support_df = praw_df[mask_support].copy()
@@ -751,7 +752,7 @@ def main():
                 "AutisticSiblings",
                 "SiblingSupport",
                 "SpecialNeedsSiblings",
-                "DisabledSiblings"
+                "DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"
             ]
             # give each support df row its rank; all “others” get pushed to the end
             rank_map = {sub: i for i, sub in enumerate(support_order)}
@@ -970,3 +971,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
