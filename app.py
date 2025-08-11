@@ -77,12 +77,12 @@ disability_terms = [
     "Developmentally delayed", "Developmental disorder", "DiGeorge syndrome",
     "Disabilities", "Disability", "Disabled", "Down syndrome", "Down’s  syndrome",
     "Downs syndrome", "Epilepsy", "Epileptic", "FAS", "FASD", "Fetal alcohol",
-    "Foetal alcohol", "Fragile X", "GDD", "Genetic condition", "Genetic disorder", “Genetic disease”,
-    "Hereditary", "Huntington", "Huntington’s", “High support needs”, "SN", "Intellectual impairment", "MECP2", "Mental delay",
+    "Foetal alcohol", "Fragile X", "GDD", "Genetic condition", "Genetic disorder", "Genetic disease",
+    "Hereditary", "Huntington", "Huntington’s", "High support needs", "SN", "Intellectual impairment", "MECP2", "Mental delay",
     "Mentally delayed", "Mentally impaired", "Mental impairment", "NDC", "NDIS",
     "Neurodevelopmental", "Neurodivergent", "Neurodiverse", "Neurospicy",
     "Prader Willi", "Prader-Willi", "Rett syndrome", "Rett’s syndrome",
-    "Retts syndrome", “Special needs”, “Special ed”, “Special education”, “The spectrum” ,"Tic disorder", "Tics", "Tourette", "Tourette’s",
+    "Retts syndrome", "Special needs", "Special ed", "Special education", "The spectrum" ,"Tic disorder", "Tics", "Tourette", "Tourette’s",
     "Tourettes", "Velocardiofacial syndrome", "William syndrome", "Williams syndrome"
 ]
 
@@ -971,5 +971,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
