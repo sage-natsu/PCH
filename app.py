@@ -1,4 +1,4 @@
-import re
+import r
 from datetime import datetime, timezone
 import subprocess
 import time  # Import the time module
@@ -371,7 +371,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
                 add_pattern = re.compile(r'\bADD\b')
-				sn_pattern  = re.compile(r'\bSN\b')  # NEW
+                sn_pattern  = re.compile(r'\bSN\b')  # NEW
                 full_text = submission.title + " " + submission.selftext
                 sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
@@ -984,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
