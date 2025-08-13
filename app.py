@@ -232,7 +232,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                     if not (start_date_utc <= created_date <= end_date_utc):
                          continue
                     add_pattern = re.compile(r'\bADD\b')
-					sn_pattern  = re.compile(r'\bSN\b')   # NEW
+                    sn_pattern  = re.compile(r'\bSN\b')   # NEW
                     full_text = submission.title + " " + submission.selftext
                     sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
@@ -984,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
