@@ -251,7 +251,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                         detected_dis.append("SN")   # NEW	
                     for dis in disability_terms:
                         if dis in ("ADD", "SN"): 
-							continue
+	                        continue                
                         if re.search(rf"\b{re.escape(dis)}\b", full_text, flags=re.IGNORECASE):
                             detected_dis.append(dis)
 
@@ -984,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
