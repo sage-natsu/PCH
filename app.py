@@ -122,7 +122,7 @@ def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
 
         # disability check: ADD via regex on original text; others via lowercase
         has_add = bool(add_pattern.search(title_body))
-	    has_sn  = bool(sn_pattern.search(title_body))  # NEW
+        has_sn  = bool(sn_pattern.search(title_body))  # NEW
         other_terms = [dis for dis in disability_terms if dis not in ("ADD", "SN")]
         has_other = any(
             re.search(rf"\b{re.escape(dis)}\b", title_body, flags=re.IGNORECASE)
@@ -984,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
