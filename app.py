@@ -122,8 +122,12 @@ def filter_relevant_posts(df, sibling_terms, disability_terms, batch_size=20):
 
         # disability check: ADD via regex on original text; others via lowercase
         has_add = bool(add_pattern.search(title_body))
-        other_terms = [dis for dis in disability_terms if dis != "ADD"]
-        has_other = any(dis.lower() in combined_lower for dis in other_terms)
+	    has_sn  = bool(sn_pattern.search(title_body))  # NEW
+        other_terms = [dis for dis in disability_terms if dis not in ("ADD", "SN")]
+        has_other = any(
+            re.search(rf"\b{re.escape(dis)}\b", title_body, flags=re.IGNORECASE)
+            for dis in other_terms
+        )
 
         has_disab = has_add or has_other
 
@@ -228,6 +232,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                     if not (start_date_utc <= created_date <= end_date_utc):
                          continue
                     add_pattern = re.compile(r'\bADD\b')
+					sn_pattern  = re.compile(r'\bSN\b')   # NEW
                     full_text = submission.title + " " + submission.selftext
                     sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
@@ -242,8 +247,12 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                     detected_dis = []
                     if add_pattern.search(full_text):
                         detected_dis.append("ADD")
+					if sn_pattern.search(full_text):  
+						detected_dis.append("SN")   # NEW	
                     for dis in disability_terms:
-                        if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
+                        if dis in ("ADD", "SN"): 
+							continue
+                        if re.search(rf"\b{re.escape(dis)}\b", full_text, flags=re.IGNORECASE):
                             detected_dis.append(dis)
 
 			# --------- Autism Detected logic ---------
@@ -362,6 +371,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
                 add_pattern = re.compile(r'\bADD\b')
+				sn_pattern  = re.compile(r'\bSN\b')  # NEW
                 full_text = submission.title + " " + submission.selftext
                 sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
@@ -374,10 +384,13 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                ]
                # disability: ADD special, then the rest
                 detected_dis = []
-                if add_pattern.search(full_text):
-                    detected_dis.append("ADD")
+                if add_pattern.search(full_text):detected_dis.append("ADD")
+				if sn_pattern.search(full_text): detected_dis.append("SN")   # NEW
+
                 for dis in disability_terms:
-                    if dis != "ADD" and re.search(rf"\b{re.escape(dis.lower())}\b", combined_lower):
+                    if dis in ("ADD", "SN"):
+						continue
+				    if re.search(rf"\b{re.escape(dis)}\b", full_text, flags=re.IGNORECASE):
                         detected_dis.append(dis)
 		# --------- Autism Detected logic ---------
                 # Looks for "autism" or "autistic" as whole words, case-insensitive
@@ -682,9 +695,9 @@ def main():
 
     # 1a) exact‐case ADD
     add_pattern = re.compile(r"\bADD\b")
+    sn_pattern  = re.compile(r"\bSN\b")  # NEW
+    other_dis_terms = [d for d in selected_disabilities if d not in ("ADD", "SN")]
 
-    # 1b) other disability terms (lowercased), including multi-word phrases
-    other_dis_terms = [d for d in selected_disabilities if d != "ADD"]
     dis_patterns = [
         re.compile(rf"\b{re.escape(d.lower())}\b") 
         for d in other_dis_terms
@@ -701,7 +714,7 @@ def main():
         return any(p.search(text) for p in sib_patterns)
 
     def has_disability(text: str) -> bool:
-        if add_pattern.search(text):
+        if add_pattern.search(text) or sn_pattern.search(text):  # include SN
             return True
         lower = text.lower()
         return any(p.search(lower) for p in dis_patterns)
@@ -971,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
