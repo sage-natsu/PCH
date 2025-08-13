@@ -248,7 +248,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                     if add_pattern.search(full_text):
                         detected_dis.append("ADD")   
                     if sn_pattern.search(full_text):  
-		                detected_dis.append("SN")   # NEW	
+                        detected_dis.append("SN")   # NEW	
                     for dis in disability_terms:
                         if dis in ("ADD", "SN"): 
 							continue
@@ -984,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
