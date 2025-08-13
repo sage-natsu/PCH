@@ -385,7 +385,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
                # disability: ADD special, then the rest
                 detected_dis = []
                 if add_pattern.search(full_text):detected_dis.append("ADD")
-				if sn_pattern.search(full_text): detected_dis.append("SN")   # NEW
+                if sn_pattern.search(full_text): detected_dis.append("SN")   # NEW
 
                 for dis in disability_terms:
                     if dis in ("ADD", "SN"):
@@ -984,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
