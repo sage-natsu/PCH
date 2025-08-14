@@ -343,9 +343,8 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
     """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
     sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport", "SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"
-
-    ]
+        "GlassChildren", "AutisticSiblings", "SiblingSupport", "SpecialNeedsSiblings","DisabledSiblings"
+	]  # ["AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"]
     
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -744,8 +743,8 @@ def main():
             "AutisticSiblings",
             "SiblingSupport",
             "SpecialNeedsSiblings",
-            "DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"
-             }
+            "DisabledSiblings"
+			 }    # {,"AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"}
             mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
             support_df = praw_df[mask_support].copy()
 
@@ -765,8 +764,8 @@ def main():
                 "AutisticSiblings",
                 "SiblingSupport",
                 "SpecialNeedsSiblings",
-                "DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"
-            ]
+                "DisabledSiblings"
+			] # [,"AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"]
             # give each support df row its rank; all “others” get pushed to the end
             rank_map = {sub: i for i, sub in enumerate(support_order)}
             support_df["__rank"]      = support_df["Subreddit"].map(rank_map)
@@ -819,12 +818,12 @@ def main():
                 )  
 		# --- ADD THIS BLOCK ---
                 # Count posts per author and merge into dataframe
-                author_post_counts = (
-                    all_posts_df.groupby('Author')
-                    .size()
-                    .reset_index(name='Author_Post_Count')
-                )
-                all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
+#                author_post_counts = (
+#                    all_posts_df.groupby('Author')
+#                    .size()
+#                    .reset_index(name='Author_Post_Count')
+#                )
+ #               all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
 # --- END BLOCK ---    
                 st.write(f"Total fetched records: {len(all_posts_df)}")   
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
@@ -984,6 +983,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
