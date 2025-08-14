@@ -389,7 +389,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
 
                 for dis in disability_terms:
                     if dis in ("ADD", "SN"):
-						continue
+                        continue
 				    if re.search(rf"\b{re.escape(dis)}\b", full_text, flags=re.IGNORECASE):
                         detected_dis.append(dis)
 		# --------- Autism Detected logic ---------
@@ -984,6 +984,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
