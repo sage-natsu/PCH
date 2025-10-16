@@ -68,7 +68,7 @@ REDDIT_USER_AGENT = "windows:SiblingsDataApp:v1.0 (by /u/Proper-Leading-4091)"
 
 # Define disability and sibling terms
 disability_terms = [
-    "22q", "22q11.2", "ADD", "ADHD","Audhd", "Angelman", "Angelmans", "ASD",
+    "22q", "22q11.2", "ADD", "ADHD","Audhd", "Angelman", "Angelmans","Angelman's","William’s syndrome", "ASD",
     "Asperger", "Asperger’s", "Aspergers", "Aspie", "Attention deficit disorder",
     "Attention deficit hyperactivity disorder", "AuADHD", "Autism", "Autistic",
     "CDKL5", "Cerebral palsy", "CHARGE syndrome", "Chromosomal", "Cognitive delay",
@@ -87,7 +87,7 @@ disability_terms = [
 ]
 
 sibling_terms = [
-    "Brother","Brothers", "Brother’s", "Sister", "Sisters", "Sister’s","Bro", "Sis", "Sibling", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
+    "Brother","Brothers", "Brother’s", "Sister", "Sisters", "Sister’s","Bro", "Sis", "Sibling","Sibling's", "Sib", "Carer", "Guardian", "Siblings", "Sibs", "Twin"
 ]
 
 # Additional keywords for struggles
@@ -983,6 +983,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
