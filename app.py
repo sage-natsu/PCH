@@ -165,24 +165,55 @@ def analyze_sentiment_and_emotion(text):
     return sentiment, emotion
     
 # ✅ Function to Construct Queries Properly
-def generate_queries(disability_terms, sibling_terms, batch_size=20):
-    """Generate optimized Reddit search queries by batching terms to reduce API calls."""
-    disability_batches = [disability_terms[i:i + batch_size] for i in range(0, len(disability_terms), batch_size)]
-    sibling_batches = [sibling_terms[i:i + batch_size] for i in range(0, len(sibling_terms), batch_size)]
-    
+def generate_queries(disability_terms, sibling_terms, batch_size=8):
+    """
+    Keep BOTH retrieval styles:
+    1) broad OR-style retrieval for recall
+    2) stricter sibling+disability retrieval for precision
+
+    Final relevance is still decided later by local filtering.
+    """
+
+    def chunk_terms(terms, size):
+        return [terms[i:i + size] for i in range(0, len(terms), size)]
+
+    disability_batches = chunk_terms(disability_terms, batch_size)
+    sibling_batches = chunk_terms(sibling_terms, batch_size)
+
     queries = []
+
+    # -------------------------------------------------
+    # A. BROAD OR RETRIEVAL
+    #    Keeps recall high so fewer posts are missed
+    # -------------------------------------------------
     for disability_group in disability_batches:
         for sibling_group in sibling_batches:
-            query = f"({' OR '.join(disability_group + sibling_group)})"
-            queries.append(query)
+            broad_query = f"({' OR '.join(disability_group + sibling_group)})"
+            queries.append(broad_query)
 
-    # ✅ Also fetch posts from specific sibling support subreddits
-    sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"
+    # -------------------------------------------------
+    # B. STRICTER SIBLING + DISABILITY RETRIEVAL
+    #    Helps pull posts that clearly mention both
+    # -------------------------------------------------
+    for disability_group in disability_batches:
+        for sibling_group in sibling_batches:
+            dis_part = " OR ".join([f'"{d}"' if " " in d else d for d in disability_group])
+            sib_part = " OR ".join([f'"{s}"' if " " in s else s for s in sibling_group])
 
-    ]
+            strict_query = f"({sib_part}) ({dis_part})"
+            queries.append(strict_query)
+
+    # -------------------------------------------------
+    # C. DIRECT SUBREDDIT CRAWL TARGETS
+    # -------------------------------------------------
+    sibling_support_subreddits =   [ "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack" ,"Parentification", "disability", "CaregiverSupport" ]
+
+
     for sub in sibling_support_subreddits:
-        queries.append(f"subreddit:{sub}")  # Fetch all posts from these subs
+        queries.append(f"subreddit:{sub}")
+
+    # remove duplicates while preserving order
+    queries = list(dict.fromkeys(queries))
 
     return queries
 
@@ -225,7 +256,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                 async for submission in subreddit_instance.search(
                     query,
                     limit=None,              # ← no max, pull as many as Reddit will give you
-                    sort="new", 
+                    sort="relevance", 
                     syntax="lucene"
                 ):
                     created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
@@ -738,13 +769,7 @@ def main():
 )
 
             # 1) Always keep anything from the official sibling‐support subs:
-            SIBLING_SUPPORT_SUBS = {
-            "GlassChildren",
-            "AutisticSiblings",
-            "SiblingSupport",
-            "SpecialNeedsSiblings",
-            "DisabledSiblings"
-			 }    # {,"AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"}
+            SIBLING_SUPPORT_SUBS = { "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH",  "SiblingSupport", "Parentification", "disability", "CaregiverSupport" }    # {,"AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"}
             mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
             support_df = praw_df[mask_support].copy()
 
@@ -759,13 +784,7 @@ def main():
             dis_mask = raw_text.apply(has_disability)   # uses regex for ADD + other terms
 
             filtered_others = others[sib_mask & dis_mask]
-            support_order = [
-                "GlassChildren",
-                "AutisticSiblings",
-                "SiblingSupport",
-                "SpecialNeedsSiblings",
-                "DisabledSiblings"
-			] # [,"AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"]
+            support_order =  [ "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH",  "SiblingSupport", "Parentification", "disability", "CaregiverSupport" ] # [,"AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"]
             # give each support df row its rank; all “others” get pushed to the end
             rank_map = {sub: i for i, sub in enumerate(support_order)}
             support_df["__rank"]      = support_df["Subreddit"].map(rank_map)
