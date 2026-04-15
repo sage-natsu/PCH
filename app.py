@@ -373,10 +373,8 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
 async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
     """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
-    sibling_support_subreddits = [
-        "GlassChildren", "AutisticSiblings", "SiblingSupport", "SpecialNeedsSiblings","DisabledSiblings"
-	]  # ["AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"]
-    
+    sibling_support_subreddits =   [ "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack" ,"Parentification", "disability", "CaregiverSupport" ]
+
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
         client_secret=REDDIT_CLIENT_SECRET,
