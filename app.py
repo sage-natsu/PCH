@@ -844,17 +844,9 @@ def main():
                 all_posts_df
                 .sort_values("Created_UTC")
                 .drop_duplicates(subset=["Post ID"], keep="last")
-                .reset_index(drop=True)X
+                .reset_index(drop=True)
                 )  
-		# --- ADD THIS BLOCK ---
-                # Count posts per author and merge into dataframe
-#                author_post_counts = (
-#                    all_posts_df.groupby('Author')
-#                    .size()
-#                    .reset_index(name='Author_Post_Count')
-#                )
- #               all_posts_df = all_posts_df.merge(author_post_counts, on='Author', how='left')
-# --- END BLOCK ---    
+	]   
                 st.write(f"Total fetched records: {len(all_posts_df)}")   
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
