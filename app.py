@@ -572,7 +572,7 @@ def plot_sentiment_by_subreddit(df):
     if df.empty:
         st.warning("No data available for sentiment analysis by subreddit.")
         return
-.
+
     sentiment_subreddit = df.groupby(['Subreddit', 'Sentiment']).size().reset_index(name='Count')
     fig = px.bar(sentiment_subreddit, x='Subreddit', y='Count', color='Sentiment',
                  title="Sentiment Distribution by Subreddit", barmode='group')
