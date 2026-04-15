@@ -370,10 +370,30 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
     # ✅ Ensure at least an empty DataFrame is returned
     return pd.DataFrame(data) if data else pd.DataFrame(columns=["Post ID", "Title", "Body", "Upvotes", "Subreddit", "Created_UTC", "Sentiment", "Emotion", "Num_Comments", "Over_18", "URL", "Permalink", "Upvote_Ratio", "Pinned", "Subreddit_Subscribers", "Subreddit_Type", "Total_Awards_Received", "Gilded", "Edited"])
 
+from dateutil.relativedelta import relativedelta
+
+def month_windows(start_date_utc, end_date_utc):
+    windows = []
+    cur = datetime(start_date_utc.year, start_date_utc.month, 1, tzinfo=timezone.utc)
+    while cur <= end_date_utc:
+        nxt = cur + relativedelta(months=1)
+        win_end = min(nxt - relativedelta(seconds=1), end_date_utc)
+        windows.append((cur, win_end))
+        cur = nxt
+    return windows
+
 async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
-    """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
-    sibling_support_subreddits =   [ "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack" ,"Parentification", "disability", "CaregiverSupport" ]
+    sibling_support_subreddits = [
+        "GlassChildren",
+        "AutisticSiblings",
+        "SiblingSupport",
+        "SpecialNeedsSiblings",
+        "DisabledSiblings",
+        "Parentification",
+        "disability",
+        "CaregiverSupport"
+    ]
 
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -381,7 +401,6 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
         user_agent=REDDIT_USER_AGENT,
     )
 
-    # ✅ Check which subreddits are valid before fetching
     valid_subreddits = []
     for sub in sibling_support_subreddits:
         if await is_subreddit_valid(reddit, sub):
@@ -391,86 +410,80 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
         st.warning("⚠️ No valid sibling support subreddits found.")
         return []
 
+    windows = month_windows(start_date_utc, end_date_utc)
+
     for sub in valid_subreddits:
         try:
             subreddit_instance = await reddit.subreddit(sub)
-            async for submission in subreddit_instance.new(limit=None):
-                created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
-                if not (start_date_utc <= created_date <= end_date_utc):
-                    continue
-                add_pattern = re.compile(r'\bADD\b')
-                sn_pattern  = re.compile(r'\bSN\b')  # NEW
-                full_text = submission.title + " " + submission.selftext
-                sentiment, emotion = analyze_sentiment_and_emotion(full_text)
 
-                # ——— NEW: Detect exactly which terms match ———
-                combined_lower = full_text.lower()
-                       # sibling
-                detected_sibs = [
-                   sib for sib in sibling_terms
-                   if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
-               ]
-               # disability: ADD special, then the rest
-                detected_dis = []
-                if add_pattern.search(full_text):detected_dis.append("ADD")
-                if sn_pattern.search(full_text): detected_dis.append("SN")   # NEW
+            for win_start, win_end in windows:
+                async for submission in subreddit_instance.new(limit=None):
+                    created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
 
-                for dis in disability_terms:
-                    if dis in ("ADD", "SN"):
+                    if created_date > win_end:
                         continue
-                    if re.search(rf"\b{re.escape(dis)}\b", full_text, flags=re.IGNORECASE):
-                        detected_dis.append(dis)
-		# --------- Autism Detected logic ---------
-                # Looks for "autism" or "autistic" as whole words, case-insensitive
-                if re.search(r"\b(autism|autistic|ASD|neurodivergent|Asperger|Aspergers|neurodiverse|Asperger’s|Aspie|AuADHD|neurospicy)\b", combined_lower):
-                    autism_detected = "Yes"
-                else:
-                    autism_detected = "No"	    
+                    if created_date < win_start:
+                        break
 
-    
-                # ✅ Prepare the post data
-                post_data = {
-                    "Post ID": submission.id,
-                    "Title": submission.title,
-                    "Body": submission.selftext,
-		    "Detected_Sibling_Terms": detected_sibs,
-                    "Detected_Disability_Terms": detected_dis,
-                    "Autism_Detected":autism_detected ,
-                    "Upvotes": submission.score,
-                    "Subreddit": submission.subreddit.display_name,
-		    "Subreddit_Lang":    getattr(submission.subreddit, "lang", None),
-                    "Subreddit_Desc":    getattr(submission.subreddit, "public_description", None),				
-                    "Author": str(submission.author),
-                    "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Sentiment": sentiment,
-                    "Emotion": emotion,
-                }
+                    add_pattern = re.compile(r'\bADD\b')
+                    sn_pattern  = re.compile(r'\bSN\b')
+                    full_text = submission.title + " " + submission.selftext
+                    sentiment, emotion = analyze_sentiment_and_emotion(full_text)
+                    combined_lower = full_text.lower()
 
-                # ✅ Add optional attributes if available
-                optional_attributes = {
-                    "Num_Comments": getattr(submission, "num_comments", None),
-                    "Over_18": getattr(submission, "over_18", None),
-		    "Link_Flair": submission.link_flair_text,				
-                    "URL": getattr(submission, "url", None),
-                    "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
-                    "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
-                    "Pinned": getattr(submission, "stickied", None),
-                    "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-                    "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
-                    "Total_Awards_Received": getattr(submission, "total_awards_received", None),
-                    "Gilded": getattr(submission, "gilded", None),
-                    "Edited": submission.edited if submission.edited else None
-                }
+                    detected_sibs = [
+                        sib for sib in sibling_terms
+                        if re.search(rf"\b{re.escape(sib.lower())}\b", combined_lower)
+                    ]
 
-                # ✅ Only add optional attributes if they are not None
-                for key, value in optional_attributes.items():
-                    if value is not None:
-                        post_data[key] = value
+                    detected_dis = []
+                    if add_pattern.search(full_text):
+                        detected_dis.append("ADD")
+                    if sn_pattern.search(full_text):
+                        detected_dis.append("SN")
 
-                subreddit_posts.append(post_data)
+                    for dis in disability_terms:
+                        if dis in ("ADD", "SN"):
+                            continue
+                        if re.search(rf"\b{re.escape(dis)}\b", full_text, flags=re.IGNORECASE):
+                            detected_dis.append(dis)
 
-        except asyncpraw.exceptions.RedditAPIException as e:
-            st.warning(f"⚠️ API Error fetching r/{sub}: {e}")
+                    if re.search(r"\b(autism|autistic|ASD|neurodivergent|Asperger|Aspergers|neurodiverse|Asperger’s|Aspie|AuADHD|neurospicy|Audhd)\b", combined_lower):
+                        autism_detected = "Yes"
+                    else:
+                        autism_detected = "No"
+
+                    post_data = {
+                        "Post ID": submission.id,
+                        "Title": submission.title,
+                        "Body": submission.selftext,
+                        "Detected_Sibling_Terms": detected_sibs,
+                        "Detected_Disability_Terms": detected_dis,
+                        "Autism_Detected": autism_detected,
+                        "Upvotes": submission.score,
+                        "Subreddit": submission.subreddit.display_name,
+                        "Subreddit_Lang": getattr(submission.subreddit, "lang", None),
+                        "Subreddit_Desc": getattr(submission.subreddit, "public_description", None),
+                        "Author": str(submission.author),
+                        "Created_UTC": created_date.strftime("%Y-%m-%d %H:%M:%S"),
+                        "Sentiment": sentiment,
+                        "Emotion": emotion,
+                        "Num_Comments": getattr(submission, "num_comments", None),
+                        "Over_18": getattr(submission, "over_18", None),
+                        "Link_Flair": submission.link_flair_text,
+                        "URL": getattr(submission, "url", None),
+                        "Permalink": f"https://www.reddit.com{submission.permalink}" if hasattr(submission, "permalink") else None,
+                        "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
+                        "Pinned": getattr(submission, "stickied", None),
+                        "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
+                        "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                        "Total_Awards_Received": getattr(submission, "total_awards_received", None),
+                        "Gilded": getattr(submission, "gilded", None),
+                        "Edited": submission.edited if submission.edited else None
+                    }
+
+                    subreddit_posts.append(post_data)
+
         except Exception as e:
             st.error(f"⚠️ Error fetching r/{sub}: {e}")
 
@@ -559,7 +572,7 @@ def plot_sentiment_by_subreddit(df):
     if df.empty:
         st.warning("No data available for sentiment analysis by subreddit.")
         return
-
+.
     sentiment_subreddit = df.groupby(['Subreddit', 'Sentiment']).size().reset_index(name='Count')
     fig = px.bar(sentiment_subreddit, x='Subreddit', y='Count', color='Sentiment',
                  title="Sentiment Distribution by Subreddit", barmode='group')
@@ -824,14 +837,14 @@ def main():
                 all_posts_df["Body"]  = all_posts_df["Body"].astype(str).map(ftfy.fix_text)
 
 
-                # 2) Ensure Created_UTC is datetime
+                # 2) Ensure Created_UTC is datetimefetch_sibling_subreddits
                 all_posts_df["Created_UTC"] = pd.to_datetime(all_posts_df["Created_UTC"], errors="coerce")
 	        # 3) Sort by date and drop duplicate Title+Body, keeping the latest
                 all_posts_df = (
                 all_posts_df
                 .sort_values("Created_UTC")
-                .drop_duplicates(subset=["Title", "Body"], keep="last")
-                .reset_index(drop=True)
+                .drop_duplicates(subset=["Post ID"], keep="last")
+                .reset_index(drop=True)X
                 )  
 		# --- ADD THIS BLOCK ---
                 # Count posts per author and merge into dataframe
