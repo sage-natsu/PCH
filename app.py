@@ -846,7 +846,7 @@ def main():
                 .drop_duplicates(subset=["Post ID"], keep="last")
                 .reset_index(drop=True)
                 )  
-	]   
+				
                 st.write(f"Total fetched records: {len(all_posts_df)}")   
                 st.write(f"Time taken to fetch records: {elapsed_time:.2f} seconds")  # Display the elapsed time    
                 st.subheader("All Posts")
