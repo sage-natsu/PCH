@@ -255,7 +255,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
              try:
                 async for submission in subreddit_instance.search(
                     query,
-                    limit=None,              # ← no max, pull as many as Reddit will give you
+                    limit=500,              # ← no max, pull as many as Reddit will give you
                     sort="relevance", 
                     syntax="lucene"
                 ):
@@ -326,7 +326,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
                         "Upvote_Ratio": getattr(submission, "upvote_ratio", None),
                         "Pinned": getattr(submission, "stickied", None),
                         "Subreddit_Subscribers": getattr(submission.subreddit, "subscribers", None),
-                        "Subreddit_Type": getattr(submission.subreddit, "subreddit_type", None),
+                        "Subreddit_Type": getattr(submission.subreddnjit, "subreddit_type", None),
                         "Total_Awards_Received": getattr(submission, "total_awards_received", None),
                         "Gilded": getattr(submission, "gilded", None),
                         "Edited": submission.edited if submission.edited else None
@@ -394,7 +394,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
     for sub in valid_subreddits:
         try:
             subreddit_instance = await reddit.subreddit(sub)
-            async for submission in subreddit_instance.new(limit=None):
+            async for submission in subreddit_instance.new(limit=1000):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
