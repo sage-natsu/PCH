@@ -394,7 +394,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
     for sub in valid_subreddits:
         try:
             subreddit_instance = await reddit.subreddit(sub)
-            async for submission in subreddit_instance.new(limit=100                                                                                                                           0):
+            async for submission in subreddit_instance.new(limit=1000)                                                                                                                           0):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
