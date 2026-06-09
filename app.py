@@ -255,7 +255,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
              try:
                 async for submission in subreddit_instance.search(
                     query,
-                    limit=1    1000,              # ← no max, pull as many as Reddit will give you
+                    limit= 1000,              # ← no max, pull as many as Reddit will give you
                     sort="relevance", 
                     syntax="lucene"
                 ):
