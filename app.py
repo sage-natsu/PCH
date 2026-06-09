@@ -255,7 +255,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
              try:
                 async for submission in subreddit_instance.search(
                     query,
-                    limit=1000,              # ← no max, pull as many as Reddit will give you
+                    limit=None,              # ← no max, pull as many as Reddit will give you
                     sort="relevance", 
                     syntax="lucene"
                 ):
@@ -373,7 +373,7 @@ async def fetch_praw_data(queries, start_date_utc, end_date_utc, limit=500, subr
 async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
     """Fetch latest posts from valid sibling support subreddits."""
     subreddit_posts = []
-    sibling_support_subreddits =   { "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack" ,"Parentification", "disability", "CaregiverSupport" }
+    sibling_support_subreddits =   [ "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack" ,"Parentification", "disability", "CaregiverSupport" ]
 
     reddit = asyncpraw.Reddit(
         client_id=REDDIT_CLIENT_ID,
@@ -394,7 +394,7 @@ async def fetch_sibling_subreddits(start_date_utc, end_date_utc, limit=1000):
     for sub in valid_subreddits:
         try:
             subreddit_instance = await reddit.subreddit(sub)
-            async for submission in subreddit_instance.new(limit=1000):
+            async for submission in subreddit_instance.new(limit=None):
                 created_date = datetime.utcfromtimestamp(submission.created_utc).replace(tzinfo=timezone.utc)
                 if not (start_date_utc <= created_date <= end_date_utc):
                     continue
@@ -767,7 +767,7 @@ def main():
 )
 
             # 1) Always keep anything from the official sibling‐support subs:
-            SIBLING_SUPPORT_SUBS = { "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH",  "SiblingSupport", "Parentification", "disability", "CaregiverSupport","Parentification", "disability", "CaregiverSupport" }    # {,"AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack"}
+            SIBLING_SUPPORT_SUBS =   [ "GlassChildren", "AutisticSiblings", "SiblingSupport","SpecialNeedsSiblings","DisabledSiblings","AIO", "AITAH", "AITA_WIBTA_PUBLIC", "AmItheAsshole", "BestofRedditorUpdates", "CemeteryPorn", "ChikaPH", "NIPT", "SiblingSupport","TrueOffMyChest", "pettyrevenge", "relationship_advice", "traumatizeThemBack" ,"Parentification", "disability", "CaregiverSupport" ]
             mask_support = praw_df["Subreddit"].isin(SIBLING_SUPPORT_SUBS)
             support_df = praw_df[mask_support].copy()
 
@@ -836,7 +836,7 @@ def main():
 		# --- ADD THIS BLOCK ---
                 # Count posts per author and merge into dataframe
 #                author_post_counts = (
-#                    all_posts_df.groupby('Author')
+#                    all_posts_df.groupby('Author')`z`a
 #                    .size()
 #                    .reset_index(name='Author_Post_Count')
 #                )
