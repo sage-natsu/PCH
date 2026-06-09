@@ -836,7 +836,7 @@ def main():
 		# --- ADD THIS BLOCK ---
                 # Count posts per author and merge into dataframe
 #                author_post_counts = (
-#                    all_posts_df.groupby('Author')`z`a
+#                    all_posts_df.groupby('Author')
 #                    .size()
 #                    .reset_index(name='Author_Post_Count')
 #                )
