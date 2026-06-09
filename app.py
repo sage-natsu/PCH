@@ -799,7 +799,7 @@ def main():
             # ─── Enrich with comment metrics ───
             with st.spinner("Fetching comments for each post… this can take a minute"):
                 # run your async helper on the whole DataFrame
-                all_posts_df = asyncio.run(enrich_with_comments(all_posts_df))
+        #        all_posts_df = asyncio.run(enrich_with_comments(all_posts_df))
 
                # now store the enriched frame in session state
                 st.session_state.all_posts = all_posts_df
